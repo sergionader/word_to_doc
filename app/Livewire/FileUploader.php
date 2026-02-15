@@ -12,54 +12,67 @@ class FileUploader extends Component
 {
     use WithFileUploads;
 
-    public $file;
+    public $files = [];
     public bool $converting = false;
-    public ?string $result = null;
+    public array $results = [];
     public ?string $error = null;
-    public ?string $downloadUrl = null;
-    public ?int $conversionId = null;
 
     protected $rules = [
-        'file' => 'required|file|mimes:docx|max:51200', // 50MB max
+        'files' => 'required|array|min:1|max:5',
+        'files.*' => 'file|mimes:docx|max:51200', // 50MB max per file
     ];
+
+    protected $messages = [
+        'files.max' => 'You can upload a maximum of 5 files at once.',
+        'files.*.mimes' => 'Only .docx files are allowed.',
+        'files.*.max' => 'Each file must be less than 50MB.',
+    ];
+
+    public function removeFile(int $index): void
+    {
+        $files = collect($this->files)->values()->all();
+        array_splice($files, $index, 1);
+        $this->files = $files;
+    }
 
     public function convert(): void
     {
         $this->validate();
 
         $this->converting = true;
-        $this->result = null;
+        $this->results = [];
         $this->error = null;
-        $this->downloadUrl = null;
 
-        try {
-            // Store uploaded file to temp directory
-            $originalName = $this->file->getClientOriginalName();
-            $tempDir = storage_path('app/private/uploads');
-            if (!is_dir($tempDir)) {
-                mkdir($tempDir, 0755, true);
-            }
+        $conversionService = app(ConversionService::class);
 
-            $storedPath = $this->file->storeAs('uploads', $originalName, 'local');
-            $fullPath = storage_path('app/private/' . $storedPath);
+        foreach ($this->files as $file) {
+            $originalName = $file->getClientOriginalName();
 
-            $conversionService = app(ConversionService::class);
-            $outputPath = $conversionService->convert($fullPath);
+            try {
+                $tempDir = storage_path('app/private/uploads');
+                if (!is_dir($tempDir)) {
+                    mkdir($tempDir, 0755, true);
+                }
 
-            $conversion = Conversion::create([
-                'user_id' => Auth::id(),
-                'source_path' => $fullPath,
-                'output_path' => $outputPath,
-                'status' => 'completed',
-            ]);
+                $storedPath = $file->storeAs('uploads', $originalName, 'local');
+                $fullPath = storage_path('app/private/' . $storedPath);
 
-            $this->conversionId = $conversion->id;
-            $this->downloadUrl = route('conversion.download', $conversion);
-            $this->result = 'Converted successfully: ' . pathinfo($originalName, PATHINFO_FILENAME) . '.md';
-        } catch (\Exception $e) {
-            $this->error = 'Conversion failed: ' . $e->getMessage();
+                $outputPath = $conversionService->convert($fullPath);
 
-            if (isset($fullPath)) {
+                $conversion = Conversion::create([
+                    'user_id' => Auth::id(),
+                    'source_path' => $fullPath,
+                    'output_path' => $outputPath,
+                    'status' => 'completed',
+                ]);
+
+                $this->results[] = [
+                    'name' => $originalName,
+                    'status' => 'completed',
+                    'message' => pathinfo($originalName, PATHINFO_FILENAME) . '.md',
+                    'downloadUrl' => route('conversion.download', $conversion),
+                ];
+            } catch (\Exception $e) {
                 Conversion::create([
                     'user_id' => Auth::id(),
                     'source_path' => $fullPath ?? '',
@@ -67,11 +80,18 @@ class FileUploader extends Component
                     'status' => 'failed',
                     'error_message' => $e->getMessage(),
                 ]);
+
+                $this->results[] = [
+                    'name' => $originalName,
+                    'status' => 'failed',
+                    'message' => $e->getMessage(),
+                    'downloadUrl' => null,
+                ];
             }
         }
 
         $this->converting = false;
-        $this->file = null;
+        $this->files = [];
     }
 
     public function render()

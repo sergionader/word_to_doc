@@ -30,7 +30,7 @@ it('uploads and converts a docx file', function () {
 
     Livewire::actingAs($this->user)
         ->test(FileUploader::class)
-        ->set('file', $fakeFile)
+        ->set('files', [$fakeFile])
         ->call('convert')
         ->assertSet('error', null);
 
@@ -43,9 +43,9 @@ it('rejects non-docx files', function () {
 
     Livewire::actingAs($this->user)
         ->test(FileUploader::class)
-        ->set('file', $fakeFile)
+        ->set('files', [$fakeFile])
         ->call('convert')
-        ->assertHasErrors(['file']);
+        ->assertHasErrors(['files.0']);
 });
 
 it('creates a conversion record in database', function () {
@@ -66,7 +66,7 @@ it('creates a conversion record in database', function () {
 
     Livewire::actingAs($this->user)
         ->test(FileUploader::class)
-        ->set('file', $fakeFile)
+        ->set('files', [$fakeFile])
         ->call('convert');
 
     $conversion = Conversion::where('user_id', $this->user->id)->first();
@@ -74,6 +74,54 @@ it('creates a conversion record in database', function () {
     expect($conversion->source_path)->toContain('sample.docx');
     expect($conversion->output_path)->toEndWith('.md');
     expect($conversion->status)->toBe('completed');
+});
+
+it('converts multiple files at once', function () {
+    $mock = Mockery::mock(ConversionService::class);
+    $mock->shouldReceive('convert')
+        ->times(3)
+        ->andReturnUsing(function ($path) {
+            $mdPath = preg_replace('/\.docx$/', '.md', $path);
+            file_put_contents($mdPath, '# Converted');
+            return $mdPath;
+        });
+    app()->instance(ConversionService::class, $mock);
+
+    $fixture = file_get_contents(base_path('tests/fixtures/sample.docx'));
+    $files = [
+        UploadedFile::fake()->createWithContent('file1.docx', $fixture),
+        UploadedFile::fake()->createWithContent('file2.docx', $fixture),
+        UploadedFile::fake()->createWithContent('file3.docx', $fixture),
+    ];
+
+    $component = Livewire::actingAs($this->user)
+        ->test(FileUploader::class)
+        ->set('files', $files)
+        ->call('convert')
+        ->assertSet('error', null);
+
+    expect(Conversion::where('user_id', $this->user->id)->count())->toBe(3);
+    expect(Conversion::where('status', 'completed')->count())->toBe(3);
+
+    $results = $component->get('results');
+    expect($results)->toHaveCount(3);
+    expect($results[0]['status'])->toBe('completed');
+    expect($results[1]['status'])->toBe('completed');
+    expect($results[2]['status'])->toBe('completed');
+});
+
+it('rejects more than 5 files', function () {
+    $fixture = file_get_contents(base_path('tests/fixtures/sample.docx'));
+    $files = [];
+    for ($i = 0; $i < 6; $i++) {
+        $files[] = UploadedFile::fake()->createWithContent("file{$i}.docx", $fixture);
+    }
+
+    Livewire::actingAs($this->user)
+        ->test(FileUploader::class)
+        ->set('files', $files)
+        ->call('convert')
+        ->assertHasErrors(['files']);
 });
 
 it('allows downloading completed conversion', function () {
