@@ -9,8 +9,8 @@ test.describe('Admin Panel', () => {
     test('admin can login and see dashboard', async ({ page }) => {
         await page.goto('/admin/login');
 
-        await page.fill('input[type="email"]', 'sergio.nader@gmail.com');
-        await page.fill('input[type="password"]', 'test1234');
+        await page.fill('input[type="email"]', 'admin@example.com');
+        await page.fill('input[type="password"]', 'test1234##');
         await page.locator('button[type="submit"]').click();
 
         await page.waitForURL('**/admin');

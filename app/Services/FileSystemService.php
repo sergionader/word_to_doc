@@ -18,12 +18,17 @@ class FileSystemService
             return [];
         }
 
-        if (!is_dir($path)) {
+        if (!is_dir($path) || !is_readable($path)) {
             return [];
         }
 
         $items = [];
-        $entries = scandir($path);
+
+        try {
+            $entries = scandir($path);
+        } catch (\ErrorException $e) {
+            return [];
+        }
 
         foreach ($entries as $entry) {
             if ($entry === '.' || $entry === '..') {
@@ -43,7 +48,7 @@ class FileSystemService
                     'path' => $fullPath,
                     'type' => 'directory',
                 ];
-            } elseif (str_ends_with(strtolower($entry), '.docx')) {
+            } elseif (str_ends_with(strtolower($entry), '.docx') || str_ends_with(strtolower($entry), '.md')) {
                 $items[] = [
                     'name' => $entry,
                     'path' => $fullPath,

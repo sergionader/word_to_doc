@@ -50,7 +50,7 @@
                         Convert Word docs<br>to Markdown
                     </h1>
                     <p class="mt-6 text-lg text-neutral-600 dark:text-neutral-400 leading-relaxed font-light">
-                        Browse your file system, right-click any <strong class="font-medium">.docx</strong> file and convert it to clean Markdown instantly. Or drag and drop files for quick conversion.
+                        Browse your file system, right-click any <strong class="font-medium">.docx</strong> or <strong class="font-medium">.md</strong> file and convert between Word and Markdown instantly. Or drag and drop files for quick conversion.
                     </p>
 
                     <div class="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -74,7 +74,7 @@
                                 </svg>
                             </div>
                             <h3 class="font-serif font-semibold text-lg">File Browser</h3>
-                            <p class="mt-1 text-sm text-neutral-500 dark:text-neutral-400 leading-relaxed">Navigate your file system with quick-access shortcuts to iCloud Drive, Desktop, and more.</p>
+                            <p class="mt-1 text-sm text-neutral-500 dark:text-neutral-400 leading-relaxed">Navigate your file system with quick-access shortcuts to iCloud Drive, Desktop, and more. Browse .docx and .md files.</p>
                         </div>
                         <div>
                             <div class="flex items-center justify-center w-10 h-10 rounded-lg bg-amber-100 dark:bg-amber-900/30 mb-3">
@@ -83,7 +83,7 @@
                                 </svg>
                             </div>
                             <h3 class="font-serif font-semibold text-lg">Right-Click Convert</h3>
-                            <p class="mt-1 text-sm text-neutral-500 dark:text-neutral-400 leading-relaxed">Right-click any .docx file in the browser to convert it to Markdown with one click.</p>
+                            <p class="mt-1 text-sm text-neutral-500 dark:text-neutral-400 leading-relaxed">Right-click any .docx or .md file in the browser to convert it with one click.</p>
                         </div>
                         <div>
                             <div class="flex items-center justify-center w-10 h-10 rounded-lg bg-amber-100 dark:bg-amber-900/30 mb-3">
@@ -92,7 +92,7 @@
                                 </svg>
                             </div>
                             <h3 class="font-serif font-semibold text-lg">Drag & Drop</h3>
-                            <p class="mt-1 text-sm text-neutral-500 dark:text-neutral-400 leading-relaxed">Upload .docx files by dragging them into the upload zone for instant conversion.</p>
+                            <p class="mt-1 text-sm text-neutral-500 dark:text-neutral-400 leading-relaxed">Upload .docx or .md files by dragging them into the upload zone for instant conversion.</p>
                         </div>
                     </div>
                 </div>

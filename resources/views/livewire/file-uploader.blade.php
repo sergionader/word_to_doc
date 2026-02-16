@@ -21,8 +21,8 @@
                                                     <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clip-rule="evenodd" />
                                                 </svg>
                                                 <div>
-                                                    <p class="text-sm font-medium text-green-800 dark:text-green-300">{{ $result['name'] }}</p>
-                                                    <p class="text-xs text-green-600 dark:text-green-400 mt-0.5">Converted to {{ $result['message'] }}</p>
+                                                    <p class="text-sm font-bold text-green-800 dark:text-green-300">{{ $result['message'] }}</p>
+                                                    <p class="text-xs text-green-600 dark:text-green-400 mt-0.5">Created from {{ $result['name'] }}</p>
                                                 </div>
                                             </div>
                                             @if ($result['downloadUrl'])
@@ -89,10 +89,10 @@
                                 <label for="file-upload" class="cursor-pointer">
                                     <span class="text-amber-600 dark:text-amber-400 font-medium hover:text-amber-500 dark:hover:text-amber-300">Upload files</span>
                                     <span class="text-neutral-500 dark:text-neutral-400"> or drag and drop</span>
-                                    <input x-ref="fileInput" id="file-upload" wire:model="files" type="file" class="sr-only" accept=".docx" multiple>
+                                    <input x-ref="fileInput" id="file-upload" wire:model="files" type="file" class="sr-only" accept=".docx,.md" multiple>
                                 </label>
                             </div>
-                            <p class="mt-2 text-xs text-neutral-500 dark:text-neutral-500">Up to 5 .docx files, 50MB each</p>
+                            <p class="mt-2 text-xs text-neutral-500 dark:text-neutral-500">Up to 5 files (.docx or .md), 50MB each</p>
                         </div>
 
                         @error('files')
@@ -131,7 +131,7 @@
                                     @if(empty($files)) disabled @endif
                                     class="w-full inline-flex justify-center items-center px-4 py-3 bg-amber-600 dark:bg-amber-500 border border-transparent rounded-md font-semibold text-white uppercase tracking-widest hover:bg-amber-700 dark:hover:bg-amber-400 focus:bg-amber-700 dark:focus:bg-amber-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
                                 <span wire:loading.remove wire:target="convert">
-                                    Convert {{ count($files) > 1 ? count($files) . ' files' : '' }} to Markdown
+                                    Convert {{ count($files) > 1 ? count($files) . ' files' : '' }}
                                 </span>
                                 <span wire:loading wire:target="convert" class="flex items-center">
                                     <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">

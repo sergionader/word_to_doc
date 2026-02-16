@@ -19,12 +19,11 @@ class FileUploader extends Component
 
     protected $rules = [
         'files' => 'required|array|min:1|max:5',
-        'files.*' => 'file|mimes:docx|max:51200', // 50MB max per file
+        'files.*' => 'file|max:51200', // 50MB max per file
     ];
 
     protected $messages = [
         'files.max' => 'You can upload a maximum of 5 files at once.',
-        'files.*.mimes' => 'Only .docx files are allowed.',
         'files.*.max' => 'Each file must be less than 50MB.',
     ];
 
@@ -38,6 +37,14 @@ class FileUploader extends Component
     public function convert(): void
     {
         $this->validate();
+
+        foreach ($this->files as $file) {
+            $ext = strtolower($file->getClientOriginalExtension());
+            if (!in_array($ext, ['docx', 'md'])) {
+                $this->addError('files', 'Only .docx and .md files are allowed.');
+                return;
+            }
+        }
 
         $this->converting = true;
         $this->results = [];
@@ -69,7 +76,7 @@ class FileUploader extends Component
                 $this->results[] = [
                     'name' => $originalName,
                     'status' => 'completed',
-                    'message' => pathinfo($originalName, PATHINFO_FILENAME) . '.md',
+                    'message' => basename($outputPath),
                     'downloadUrl' => route('conversion.download', $conversion),
                 ];
             } catch (\Exception $e) {

@@ -100,12 +100,15 @@ class FileBrowser extends Component
             return;
         }
 
-        if (!str_ends_with(strtolower($filePath), '.docx')) {
-            $this->conversionError = 'Only .docx files can be converted.';
+        $lowerPath = strtolower($filePath);
+        if (!str_ends_with($lowerPath, '.docx') && !str_ends_with($lowerPath, '.md')) {
+            $this->conversionError = 'Only .docx and .md files can be converted.';
             return;
         }
 
         $this->convertingFile = basename($filePath);
+        $extension = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
+        $outputExtension = $extension === 'docx' ? '.md' : '.docx';
 
         try {
             $conversionService = app(ConversionService::class);
@@ -124,7 +127,7 @@ class FileBrowser extends Component
             Conversion::create([
                 'user_id' => Auth::id(),
                 'source_path' => $filePath,
-                'output_path' => pathinfo($filePath, PATHINFO_DIRNAME) . '/' . pathinfo($filePath, PATHINFO_FILENAME) . '.md',
+                'output_path' => pathinfo($filePath, PATHINFO_DIRNAME) . '/' . pathinfo($filePath, PATHINFO_FILENAME) . $outputExtension,
                 'status' => 'failed',
                 'error_message' => $e->getMessage(),
             ]);
