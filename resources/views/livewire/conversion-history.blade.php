@@ -1,6 +1,6 @@
 <div>
     <x-slot name="header">
-        <h2 class="font-serif font-semibold text-xl text-neutral-800 dark:text-neutral-100 leading-tight">
+        <h2 class="font-semibold text-xl text-neutral-800 dark:text-neutral-100 leading-tight">
             {{ __('Conversion History') }}
         </h2>
     </x-slot>

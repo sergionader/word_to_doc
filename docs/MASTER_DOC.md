@@ -1,6 +1,6 @@
 # Word to Markdown - Master Documentation
 
-**Last Updated:** 2026-02-16 12:35 | Branch: `master` | Commit: `9a364f1`
+**Last Updated:** 2026-02-22 17:50 | Branch: `master` | Commit: `d0c1788`
 
 ---
 
@@ -8,6 +8,7 @@
 
 | Version | Date | Author | Branch / Commit | Summary |
 |---------|------|--------|-----------------|---------|
+| 1.3 | 2026-02-22 17:50 | Claude | `master` @ `d0c1788` | Added Markdown reader to file browser, fixed theme persistence after login, switched to sans-serif font, dynamic app name via config, email config docs. |
 | 1.2 | 2026-02-16 12:35 | Claude | `master` @ `9a364f1` | Changed admin seeder to generic credentials (admin@example.com), added admin seeding section to Operations. |
 | 1.1.1 | 2026-02-16 17:30 | Claude | `master` @ `9a364f1` | Documented ConversionService internal methods, FileSystemService readability checks, upload result label inversion, landing page bidirectional messaging. |
 | 1.1 | 2026-02-16 12:00 | Claude | `master` @ `9a364f1` | Added bidirectional conversion (MD to DOCX), updated ConversionService, FileUploader, FileBrowser, and landing page. |
@@ -44,7 +45,8 @@
   - [18. Landing Page](#18-landing-page)
 - [Part VIII: Operations](#part-viii-operations)
   - [19. Development Setup](#19-development-setup)
-  - [20. External Dependencies](#20-external-dependencies)
+  - [20. Email Configuration](#20-email-configuration)
+  - [21. External Dependencies](#21-external-dependencies)
 
 ---
 
@@ -52,10 +54,11 @@
 
 ## 1. Introduction
 
-**Word to Markdown** is a Laravel 12 web application that provides bidirectional conversion between Microsoft Word (.docx) and Markdown (.md) formats. It provides two conversion workflows:
+**Word to MD** is a Laravel 12 web application for working with Word and Markdown files. It reads rendered Markdown directly in the browser and provides bidirectional conversion between `.docx` and `.md` formats. Three main workflows:
 
-1. **File Browser** - Navigate the server's file system, find `.docx` or `.md` files, and right-click to convert them in place.
+1. **File Browser** - Navigate the server's file system, click `.md` files to read them rendered, and right-click any `.docx` or `.md` file to convert.
 2. **Upload & Convert** - Drag-and-drop or upload up to 5 files (.docx or .md) at once for batch conversion with download links.
+3. **Markdown Reader** - Click any `.md` file in the file browser to view it rendered with full formatting in a modal overlay.
 
 All conversions are tracked in a database with a full history view. An admin panel (Filament v4) provides user management and conversion analytics.
 
@@ -67,12 +70,14 @@ All conversions are tracked in a database with a full history view. An admin pan
 | PHP | PHP | 8.2+ |
 | Frontend Reactivity | Livewire | 3.6+ |
 | Livewire Components | Volt | 1.7+ |
+| JS Framework | Alpine.js | (ships with Livewire) |
 | Admin Panel | Filament | 4.7+ |
 | Document Conversion | Pandoc (via `ueberdosis/pandoc`) | 0.9+ |
-| CSS Framework | Tailwind CSS | 4.x |
-| Build Tool | Vite | - |
+| CSS Framework | Tailwind CSS | 3.x |
+| Build Tool | Vite | 7.x |
 | Auth Scaffolding | Laravel Breeze | 2.3+ (dev) |
 | Testing | Pest | 3.8+ |
+| E2E Testing | Playwright | 1.58+ |
 | Database | SQLite | (default) |
 
 ## 3. Architecture
@@ -187,14 +192,25 @@ Features:
 - Navigates the server file system within the configured `browse_root`
 - Shows directories, `.docx`, and `.md` files (hidden files are excluded)
 - Directories listed first, then files, both alphabetically sorted
+- **Markdown Reader** - Click any `.md` file to read it rendered in a modal overlay
 - **Quick Navigation** shortcuts: iCloud Drive, Desktop, Documents, Downloads
 - **Breadcrumb** navigation with clickable path segments
 - **Grid/List** view toggle
-- **Right-click context menu** on files with dynamic action label:
+- **Right-click context menu** on files with dynamic actions:
+  - `.md` files → "Read" (preview) and "Convert to Word"
   - `.docx` files → "Convert to Markdown"
-  - `.md` files → "Convert to Word"
 - Remembers the user's last visited folder (`last_used_folder` on User model)
 - Converted files appear alongside source files in the listing
+
+### Markdown Reader
+
+The `readFile()` method renders `.md` files in a modal preview:
+
+- **Max file size:** 512 KB
+- **Rendering:** Uses `Str::markdown()` (CommonMark) with `html_input: strip` and `allow_unsafe_links: false`
+- **Styling:** Tailwind Typography (`prose dark:prose-invert`)
+- **UI:** Modal overlay with filename header, scrollable content (max 70vh), close button, Escape key dismiss
+- **Loading:** Spinner overlay shown via `wire:loading` during file read
 
 ### Path Validation
 
@@ -380,34 +396,37 @@ The application supports **dark and light themes** with the following implementa
 - Theme preference stored in `localStorage` under key `theme`
 - Default theme: **dark**
 - FOUC prevention: inline script in `<head>` reads theme before page render
-- Toggle component: `<x-theme-toggle />` with sun/moon icons
-- Available on both the landing page header and the app navigation bar
+- SPA navigation persistence: `livewire:navigated` event listener in `app.js` re-applies theme from `localStorage` (the inline FOUC script doesn't re-execute during Livewire `wire:navigate` transitions)
+- Toggle component: `<x-theme-toggle />` with sun/moon icons (Alpine.js)
+- Available on the landing page header, app navigation bar (desktop + mobile), and guest layout (auth pages)
 
 ### Design Tokens
 
 - **Primary accent:** Amber (amber-600 light / amber-400 dark)
 - **Neutral palette:** neutral-50 through neutral-950
-- **Fonts:** Cormorant (serif, headings) + Outfit (sans-serif, body)
+- **Font:** Outfit (sans-serif) for all text
 - **Border radius:** rounded-md (buttons), rounded-lg (cards)
 
 ## 17. Layout & Navigation
 
 ### App Layout (`layouts/app.blade.php`)
-- Top navigation bar with logo, page links, theme toggle, user dropdown
+- Top navigation bar with logo (links to browse), page links, theme toggle, user dropdown
+- App name pulled from `config('app.name')` — set via `APP_NAME` in `.env`
 - Navigation links: Browse, Upload, History
 - Responsive hamburger menu for mobile
 - User dropdown: Profile, Log Out
 
 ### Guest Layout (`layouts/guest.blade.php`)
 - Minimal centered layout for auth pages
+- Logo with app name from `config('app.name')` and theme toggle
 
 ## 18. Landing Page
 
 The landing page (`welcome.blade.php`) features:
-- Header with logo, theme toggle, login/register links
-- Hero section: "Convert Word docs to Markdown" with bidirectional messaging (.docx and .md)
-- Three feature cards: File Browser (browse .docx and .md), Right-Click Convert (bidirectional), Drag & Drop (both formats)
-- "Get Started" CTA button (links to login or browse if authenticated)
+- Header with app name from `config('app.name')`, theme toggle, login/register links
+- Hero section: "Word & Markdown, back and forth"
+- Three feature cards: Read Markdown, Right-Click Convert, File Browser
+- "Get Started" CTA button (links to login, or "Open File Browser" if authenticated)
 - Footer: "Powered by Pandoc"
 
 ---
@@ -453,7 +472,26 @@ Uses `updateOrCreate` so it can be re-run safely.
 composer test     # clears config cache + runs pest tests
 ```
 
-## 20. External Dependencies
+## 20. Email Configuration
+
+By default, the mailer is set to `log`, meaning all emails (password resets, verification, etc.) are written to `storage/logs/` instead of being sent.
+
+To enable real email delivery, set the following in `.env`:
+
+```
+MAIL_MAILER=smtp
+MAIL_HOST=smtp.example.com
+MAIL_PORT=587
+MAIL_USERNAME=your-email@example.com
+MAIL_PASSWORD=your-password
+MAIL_ENCRYPTION=tls
+MAIL_FROM_ADDRESS=noreply@example.com
+MAIL_FROM_NAME="${APP_NAME}"
+```
+
+Any SMTP provider works: Mailgun, Postmark, AWS SES, Mailtrap (for testing), etc. See the [Laravel Mail docs](https://laravel.com/docs/12.x/mail) for all supported drivers.
+
+## 21. External Dependencies
 
 ### Pandoc
 

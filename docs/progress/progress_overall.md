@@ -1,12 +1,14 @@
 # Word-to-Markdown Laravel Application (2026-02-14)
 
+> **Last Updated:** 2026-02-22 17:18 EST
+
 ## Summary
 
-Built a full Laravel 12 application from scratch that converts MS Word (.docx) files to Markdown via a file browser with right-click context menu and a drag-and-drop uploader. Includes authentication (Breeze), admin panel (Filament v4), PostgreSQL database, and comprehensive test suites (Pest + Playwright).
+Built a full Laravel 12 application from scratch that converts MS Word (.docx) files to Markdown via a file browser with right-click context menu and a drag-and-drop uploader. Now also reads and renders Markdown files directly in the browser. Includes authentication (Breeze), admin panel (Filament v4), SQLite database, dark/light theme, and comprehensive test suites (Pest + Playwright).
 
 ## Status: 🚧 In Progress
 
-Core app complete. UX improvements session in progress (drag-and-drop fix, list view, quick nav).
+Core app complete. UX refinements ongoing — theme persistence, font cleanup, home page updates, README refresh.
 
 ## Key Decisions
 
@@ -18,6 +20,10 @@ Core app complete. UX improvements session in progress (drag-and-drop fix, list 
 - Dashboard route redirects to `/browse` instead of rendering its own view
 - Default file browser view set to list (not grid) for better usability
 - Replaced Laravel branding entirely — custom nav logo, app-specific welcome/landing page
+- Dark mode is the default theme; persisted via localStorage
+- App name driven by `APP_NAME` env var (`config('app.name')`) — no hardcoded strings in views
+- Removed serif font (Cormorant) from all UI; everything uses sans-serif (Outfit) for consistency
+- Logo/app name in nav is a navigation link (to browse), not a theme toggle
 
 ## Changes Made
 
@@ -37,11 +43,16 @@ Core app complete. UX improvements session in progress (drag-and-drop fix, list 
 | `app/Livewire/FileUploader.php` | Drag-and-drop upload with Livewire file uploads, conversion, download link |
 | `app/Livewire/ConversionHistory.php` | Paginated conversion history table |
 | `app/Http/Controllers/ConversionController.php` | Download endpoint with ownership check |
-| `resources/views/livewire/file-browser.blade.php` | Grid/list view toggle, folder/file icons, Alpine.js context menu, breadcrumbs, quick nav buttons |
-| `resources/views/livewire/file-uploader.blade.php` | Drop zone UI with working drag-and-drop via `@this.upload()`, progress indicator, download button |
-| `resources/views/livewire/conversion-history.blade.php` | Table with status badges, download links, pagination |
-| `resources/views/livewire/layout/navigation.blade.php` | Custom nav: document icon + "Word to MD" text, Browse/Upload/History links |
-| `resources/views/welcome.blade.php` | Replaced default Laravel page with app landing: hero, feature cards, login/register CTAs |
+| `resources/js/app.js` | Added `livewire:navigated` listener to re-apply theme after SPA navigation |
+| `resources/views/livewire/file-browser.blade.php` | Grid/list view toggle, folder/file icons, Alpine.js context menu, breadcrumbs, quick nav buttons; removed `font-serif` |
+| `resources/views/livewire/file-uploader.blade.php` | Drop zone UI with working drag-and-drop via `@this.upload()`, progress indicator, download button; removed `font-serif` |
+| `resources/views/livewire/conversion-history.blade.php` | Table with status badges, download links, pagination; removed `font-serif` |
+| `resources/views/livewire/layout/navigation.blade.php` | Custom nav: document icon + app name from config, Browse/Upload/History links; removed `font-serif` |
+| `resources/views/welcome.blade.php` | Landing page: updated hero ("Word & Markdown, back and forth"), feature cards (Read Markdown, Right-Click Convert, File Browser), app name from config; removed `font-serif` |
+| `resources/views/layouts/guest.blade.php` | App name from `config('app.name')`; removed `font-serif` |
+| `resources/views/layouts/app.blade.php` | FOUC prevention script for dark mode |
+| `resources/views/profile.blade.php` | Removed `font-serif` |
+| `README.md` | Full rewrite: features list, MD reading, email config section, updated tech stack with versions |
 | `routes/web.php` | App routes: browse, convert, history, download; dashboard redirects to browse |
 | `app/Filament/Resources/UserResource.php` | Admin CRUD for users |
 | `app/Filament/Resources/ConversionResource.php` | Admin view for all conversions |
@@ -64,11 +75,14 @@ Core app complete. UX improvements session in progress (drag-and-drop fix, list 
 
 ## Technical Details
 
-- **Stack**: Laravel 12, Livewire 3, Alpine.js, TailwindCSS, Filament v4, PostgreSQL
+- **Stack**: Laravel 12, Livewire 3 + Volt, Alpine.js, Tailwind CSS 3, Vite 7, Filament v4, SQLite
 - **Conversion**: Uses `ueberdosis/pandoc` package wrapping the Pandoc CLI (`pandoc` must be in PATH)
 - **File browser security**: `FileSystemService.isValidPath()` uses `realpath()` to prevent directory traversal outside `BROWSE_ROOT_PATH`
 - **Admin access**: `User` model implements `FilamentUser` interface; `canAccessPanel()` checks `is_admin` column
 - **Filament v4 differences**: `form()` method signature uses `Schema` instead of `Form`; `$navigationIcon` type is `string | BackedEnum | null`
+- **Theme system**: Dark mode default; `localStorage` key `theme` with values `dark`/`light`; FOUC prevention via inline script in `<head>`; `livewire:navigated` event re-applies theme after SPA navigation
+- **Fonts**: Sans-serif only (Outfit); Cormorant serif font still loaded but no longer used in any view
+- **Email**: Default mailer is `log` (writes to `storage/logs`); switch to SMTP via `.env` for real delivery
 
 ## Issues Resolved
 
@@ -104,10 +118,15 @@ Core app complete. UX improvements session in progress (drag-and-drop fix, list 
 - **Problem**: `getBreadcrumbs()` used `str_replace($root, '', $path)` — when root is `/`, this removed ALL `/` characters from the entire path, producing one merged string like "UserssergionLibrary..."
 - **Solution**: Replaced with `substr($path, strlen(rtrim($root, '/')))` to only strip the root prefix
 
+### Theme lost after login (dark → light)
+- **Problem**: Livewire's `navigate: true` redirect after login performs SPA-style DOM morphing. The inline FOUC prevention `<script>` in `<head>` doesn't re-execute, so the `dark` class on `<html>` is lost
+- **Solution**: Added `livewire:navigated` event listener in `app.js` that re-applies the theme from `localStorage`
+
 ## Outstanding Tasks
 
 - [ ] Fix npm cache ownership permanently: `sudo chown -R 501:20 "/Users/sergion/.npm"`
 - [ ] Run existing tests to verify no regressions from UX changes
+- [ ] Remove unused Cormorant serif font from font imports (no longer referenced in views)
 
 ---
 
@@ -143,3 +162,13 @@ Core app complete. UX improvements session in progress (drag-and-drop fix, list 
 - `FileBrowser.php`: Fixed `getBreadcrumbs()` to use `substr()` instead of `str_replace()`; changed default `$viewMode` to `'list'`
 - `navigation.blade.php`: Custom branding replacing Laravel logo
 - `welcome.blade.php`: Full rewrite — app-specific landing page
+
+### 2026-02-22 17:18 EST
+
+- **Fixed theme lost after login**: Added `livewire:navigated` event listener in `app.js` to re-apply dark/light theme from `localStorage` after Livewire SPA navigation. The inline FOUC script in `<head>` doesn't re-execute during `wire:navigate` transitions.
+- **Updated home page for MD reading**: Hero changed to "Word & Markdown, back and forth". Feature cards reordered: Read Markdown (new), Right-Click Convert, File Browser (consolidated drag & drop).
+- **Dynamic app name**: Replaced all hardcoded "Word to MD" / "Word to Markdown" strings with `config('app.name', 'Word to MD')` across welcome, guest layout, and navigation views.
+- **Removed serif font**: Stripped `font-serif` class from all 11 blade templates (welcome, guest layout, navigation, file browser, file uploader, conversion history, profile). All text now uses Outfit sans-serif.
+- **Reverted logo to navigation link**: Logo in nav bar restored to `<a>` linking to browse route (was accidentally made a theme toggle button).
+- **Updated README**: Full rewrite for public portfolio — added features list, Markdown reading, email configuration section, updated tech stack with accurate versions, MIT license.
+- **Set `.env` APP_NAME**: Changed from "Word to Markdown & Vice Versa" to "Word to MD".

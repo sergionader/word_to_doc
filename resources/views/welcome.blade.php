@@ -4,7 +4,7 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
 
-        <title>Word to Markdown</title>
+        <title>{{ config('app.name', 'Word to MD') }}</title>
 
         <!-- Theme (prevent FOUC) -->
         <script>
@@ -26,7 +26,7 @@
                     <svg class="h-7 w-7 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
                     </svg>
-                    <span class="font-serif font-semibold text-xl tracking-tight">Word to Markdown</span>
+                    <span class="font-semibold text-xl tracking-tight">{{ config('app.name', 'Word to MD') }}</span>
                 </div>
                 <nav class="flex items-center gap-3">
                     <x-theme-toggle />
@@ -46,11 +46,11 @@
             {{-- Hero --}}
             <main class="flex-1 flex items-center justify-center px-6">
                 <div class="max-w-2xl text-center">
-                    <h1 class="font-serif text-4xl font-semibold tracking-tight sm:text-5xl lg:text-6xl">
-                        Convert Word docs<br>to Markdown
+                    <h1 class="text-4xl font-semibold tracking-tight sm:text-5xl lg:text-6xl">
+                        Word & Markdown,<br>back and forth
                     </h1>
                     <p class="mt-6 text-lg text-neutral-600 dark:text-neutral-400 leading-relaxed font-light">
-                        Browse your file system, right-click any <strong class="font-medium">.docx</strong> or <strong class="font-medium">.md</strong> file and convert between Word and Markdown instantly. Or drag and drop files for quick conversion.
+                        Browse your file system, read <strong class="font-medium">.md</strong> files directly in the browser, and convert between <strong class="font-medium">.docx</strong> and <strong class="font-medium">.md</strong> with a right-click. Drag and drop files for quick conversion.
                     </p>
 
                     <div class="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -70,11 +70,12 @@
                         <div>
                             <div class="flex items-center justify-center w-10 h-10 rounded-lg bg-amber-100 dark:bg-amber-900/30 mb-3">
                                 <svg class="w-5 h-5 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                 </svg>
                             </div>
-                            <h3 class="font-serif font-semibold text-lg">File Browser</h3>
-                            <p class="mt-1 text-sm text-neutral-500 dark:text-neutral-400 leading-relaxed">Navigate your file system with quick-access shortcuts to iCloud Drive, Desktop, and more. Browse .docx and .md files.</p>
+                            <h3 class="font-semibold text-lg">Read Markdown</h3>
+                            <p class="mt-1 text-sm text-neutral-500 dark:text-neutral-400 leading-relaxed">Click any .md file to read it rendered in the browser. No extra tools needed.</p>
                         </div>
                         <div>
                             <div class="flex items-center justify-center w-10 h-10 rounded-lg bg-amber-100 dark:bg-amber-900/30 mb-3">
@@ -82,17 +83,17 @@
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182M2.985 19.644l3.181-3.182" />
                                 </svg>
                             </div>
-                            <h3 class="font-serif font-semibold text-lg">Right-Click Convert</h3>
-                            <p class="mt-1 text-sm text-neutral-500 dark:text-neutral-400 leading-relaxed">Right-click any .docx or .md file in the browser to convert it with one click.</p>
+                            <h3 class="font-semibold text-lg">Right-Click Convert</h3>
+                            <p class="mt-1 text-sm text-neutral-500 dark:text-neutral-400 leading-relaxed">Right-click any .docx or .md file to convert between formats with one click.</p>
                         </div>
                         <div>
                             <div class="flex items-center justify-center w-10 h-10 rounded-lg bg-amber-100 dark:bg-amber-900/30 mb-3">
                                 <svg class="w-5 h-5 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.233-2.33 3 3 0 013.758 3.848A3.752 3.752 0 0118 19.5H6.75z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z" />
                                 </svg>
                             </div>
-                            <h3 class="font-serif font-semibold text-lg">Drag & Drop</h3>
-                            <p class="mt-1 text-sm text-neutral-500 dark:text-neutral-400 leading-relaxed">Upload .docx or .md files by dragging them into the upload zone for instant conversion.</p>
+                            <h3 class="font-semibold text-lg">File Browser</h3>
+                            <p class="mt-1 text-sm text-neutral-500 dark:text-neutral-400 leading-relaxed">Navigate your file system with shortcuts to iCloud Drive, Desktop, and Downloads. Drag and drop files for quick conversion.</p>
                         </div>
                     </div>
                 </div>

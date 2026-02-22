@@ -1,6 +1,6 @@
 <div>
     <x-slot name="header">
-        <h2 class="font-serif font-semibold text-xl text-neutral-800 dark:text-neutral-100 leading-tight">
+        <h2 class="font-semibold text-xl text-neutral-800 dark:text-neutral-100 leading-tight">
             {{ __('Browse Files') }}
         </h2>
     </x-slot>
@@ -128,6 +128,9 @@
                                             </div>
                                         @else
                                             <div class="flex flex-col items-center p-4 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 cursor-pointer group relative transition-colors"
+                                                 @if (str_ends_with(strtolower($item['name']), '.md'))
+                                                     wire:click="readFile('{{ $item['path'] }}')"
+                                                 @endif
                                                  @contextmenu.prevent="contextMenu = { show: true, x: $event.clientX, y: $event.clientY, filePath: '{{ $item['path'] }}' }">
                                                 <svg class="w-12 h-12 text-blue-400 dark:text-blue-500 group-hover:text-blue-500 dark:group-hover:text-blue-400" fill="currentColor" viewBox="0 0 24 24">
                                                     <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z" />
@@ -152,6 +155,9 @@
                                             </div>
                                         @else
                                             <div class="flex items-center px-3 py-2.5 rounded hover:bg-neutral-100 dark:hover:bg-neutral-800 cursor-pointer group transition-colors"
+                                                 @if (str_ends_with(strtolower($item['name']), '.md'))
+                                                     wire:click="readFile('{{ $item['path'] }}')"
+                                                 @endif
                                                  @contextmenu.prevent="contextMenu = { show: true, x: $event.clientX, y: $event.clientY, filePath: '{{ $item['path'] }}' }">
                                                 <svg class="w-5 h-5 text-blue-400 dark:text-blue-500 group-hover:text-blue-500 dark:group-hover:text-blue-400 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
                                                     <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z" />
@@ -173,6 +179,15 @@
                                  :style="'position: fixed; left: ' + contextMenu.x + 'px; top: ' + contextMenu.y + 'px;'"
                                  class="z-50 bg-white dark:bg-neutral-800 rounded-md shadow-lg dark:shadow-neutral-900/50 border border-neutral-200 dark:border-neutral-700 py-1 min-w-[160px]"
                                  @click.away="contextMenu.show = false">
+                                <button x-show="contextMenu.filePath.toLowerCase().endsWith('.md')"
+                                        @click="$wire.readFile(contextMenu.filePath); contextMenu.show = false"
+                                        class="w-full text-left px-4 py-2 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-700 dark:hover:text-blue-300 flex items-center transition-colors">
+                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                    </svg>
+                                    Read
+                                </button>
                                 <button @click="$wire.convertFile(contextMenu.filePath); contextMenu.show = false"
                                         class="w-full text-left px-4 py-2 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-amber-50 dark:hover:bg-amber-900/20 hover:text-amber-700 dark:hover:text-amber-300 flex items-center transition-colors">
                                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -187,4 +202,45 @@
             </div>
         </div>
     </div>
+
+    {{-- Loading spinner overlay --}}
+    <div wire:loading wire:target="readFile" class="fixed inset-0 z-40 flex items-center justify-center bg-neutral-900/50">
+        <div class="bg-white dark:bg-neutral-800 rounded-lg p-6 shadow-xl flex items-center space-x-3">
+            <svg class="animate-spin h-5 w-5 text-amber-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span class="text-sm text-neutral-700 dark:text-neutral-300">Loading preview...</span>
+        </div>
+    </div>
+
+    {{-- Markdown Preview Modal --}}
+    @if ($showMarkdownPreview)
+        <div class="fixed inset-0 overflow-y-auto px-4 py-6 sm:px-0 z-50"
+             x-data
+             x-on:keydown.escape.window="$wire.closePreview()">
+            {{-- Backdrop --}}
+            <div class="fixed inset-0" wire:click="closePreview">
+                <div class="absolute inset-0 bg-neutral-500 dark:bg-neutral-900 opacity-75"></div>
+            </div>
+            {{-- Modal content --}}
+            <div class="mb-6 bg-white dark:bg-neutral-800 rounded-lg overflow-hidden shadow-xl dark:shadow-neutral-900/50 sm:w-full sm:max-w-4xl sm:mx-auto relative">
+                <div class="flex items-center justify-between px-6 py-4 border-b border-neutral-200 dark:border-neutral-700">
+                    <h3 class="text-lg font-semibold text-neutral-800 dark:text-neutral-100 truncate pr-4">
+                        {{ $previewFileName }}
+                    </h3>
+                    <button wire:click="closePreview" class="text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors flex-shrink-0">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                <div class="px-6 py-4 overflow-y-auto max-h-[70vh]">
+                    <div class="prose dark:prose-invert max-w-none">
+                        {!! $markdownHtml !!}
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
 </div>

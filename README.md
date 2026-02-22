@@ -1,13 +1,23 @@
-# Word to Markdown
+# Word to MD
 
-A Laravel 12 web application for bidirectional conversion between Microsoft Word (.docx) and Markdown (.md) files. Browse your file system, right-click to convert, or drag and drop files for batch conversion.
+A Laravel 12 web application for working with Word and Markdown files. Browse your local file system, read rendered Markdown directly in the browser, and convert bidirectionally between `.docx` and `.md` with a right-click. Drag and drop files for batch conversion.
+
+## Features
+
+- **Markdown Reader** - Click any `.md` file to read it rendered with full formatting
+- **Bidirectional Conversion** - Right-click to convert `.docx` to `.md` or `.md` to `.docx`
+- **File Browser** - Navigate your file system with quick-access shortcuts (iCloud Drive, Desktop, Downloads)
+- **Batch Upload** - Drag and drop up to 5 files at once for conversion
+- **Dark / Light Theme** - Dark mode by default, toggle with the sun/moon icon
+- **Admin Panel** - Filament-powered admin dashboard at `/admin`
+- **Conversion History** - Track all past conversions
 
 ## Prerequisites
 
 - **PHP** 8.2+
 - **Composer**
 - **Node.js** & **npm**
-- **Pandoc** (the `pandoc` binary must be available in your PATH)
+- **Pandoc** (must be available in your PATH)
 
 ### Installing Pandoc
 
@@ -80,17 +90,35 @@ php artisan db:seed
 | Email | `admin@example.com` |
 | Password | `test1234##` |
 
-The admin panel is available at `/admin`.
+### Email
+
+By default, mail is set to the `log` driver, meaning emails (password resets, etc.) are written to `storage/logs` instead of being sent. To enable real email delivery, update these variables in your `.env`:
+
+```
+MAIL_MAILER=smtp
+MAIL_HOST=smtp.example.com
+MAIL_PORT=587
+MAIL_USERNAME=your-email@example.com
+MAIL_PASSWORD=your-password
+MAIL_ENCRYPTION=tls
+MAIL_FROM_ADDRESS=noreply@example.com
+MAIL_FROM_NAME="${APP_NAME}"
+```
+
+Any SMTP provider works (Mailgun, Postmark, SES, Mailtrap for testing, etc.). See the [Laravel Mail docs](https://laravel.com/docs/12.x/mail) for all supported drivers.
 
 ## Tech Stack
 
 - **Laravel 12** - PHP framework
-- **Livewire 3** - Reactive frontend components
+- **Livewire 3 + Volt** - Reactive frontend components
+- **Alpine.js** - Lightweight JS framework (ships with Livewire)
 - **Filament 4** - Admin panel
-- **Pandoc** - Document conversion engine
-- **Tailwind CSS** - Styling
+- **Tailwind CSS 3** - Utility-first styling
+- **Vite 7** - Frontend build tool
+- **Pandoc** - Document conversion engine (via `ueberdosis/pandoc`)
+- **Pest** - Testing framework
 - **SQLite** - Database (default)
 
-## Documentation
+## License
 
-See [docs/MASTER_DOC.md](docs/MASTER_DOC.md) for full project documentation.
+MIT
