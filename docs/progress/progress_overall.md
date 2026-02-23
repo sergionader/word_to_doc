@@ -29,11 +29,11 @@ Core app complete. UX refinements ongoing — theme persistence, font cleanup, h
 
 | File | Change |
 |------|--------|
-| `.env` | Configured for PostgreSQL (db: `word_to_doc`, user: `sergion`), browse root `/`, pandoc binary |
+| `.env` | Configured database, browse root `/`, pandoc binary |
 | `config/filesystems.php` | Added `browse_root` config key |
 | `database/migrations/*_add_fields_to_users_table.php` | Added `last_used_folder` (nullable string) and `is_admin` (boolean) to users |
 | `database/migrations/*_create_conversions_table.php` | Created conversions table with user_id, source/output paths, status enum, error_message |
-| `database/seeders/AdminSeeder.php` | Seeds admin user (sergio.nader@gmail.com / test1234) |
+| `database/seeders/AdminSeeder.php` | Seeds default admin user (admin@example.com) |
 | `database/seeders/DatabaseSeeder.php` | Updated to call AdminSeeder |
 | `app/Models/User.php` | Added `is_admin`, `last_used_folder` to fillable; `conversions()` relationship; `FilamentUser` interface with `canAccessPanel()` |
 | `app/Models/Conversion.php` | New model with user relationship |
@@ -88,7 +88,7 @@ Core app complete. UX refinements ongoing — theme persistence, font cleanup, h
 
 ### npm cache ownership
 - **Problem**: npm cache contained root-owned files, blocking `npm install`
-- **Solution**: Used `--cache /tmp/.npm-cache` as workaround. Permanent fix requires `sudo chown -R 501:20 "/Users/sergion/.npm"`
+- **Solution**: Used `--cache /tmp/.npm-cache` as workaround. Permanent fix requires `sudo chown -R $(id -u):$(id -g) ~/.npm`
 
 ### Filament v4 type mismatch
 - **Problem**: `$navigationIcon` type changed from `?string` to `string | BackedEnum | null` in Filament v4
@@ -124,7 +124,7 @@ Core app complete. UX refinements ongoing — theme persistence, font cleanup, h
 
 ## Outstanding Tasks
 
-- [ ] Fix npm cache ownership permanently: `sudo chown -R 501:20 "/Users/sergion/.npm"`
+- [ ] Fix npm cache ownership permanently: `sudo chown -R $(id -u):$(id -g) ~/.npm`
 - [ ] Run existing tests to verify no regressions from UX changes
 - [ ] Remove unused Cormorant serif font from font imports (no longer referenced in views)
 
