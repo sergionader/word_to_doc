@@ -6,6 +6,7 @@ use App\Models\Conversion;
 use App\Services\ConversionService;
 use App\Services\FileSystemService;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 use Livewire\Component;
 
 class FileBrowser extends Component
@@ -16,6 +17,9 @@ class FileBrowser extends Component
     public ?string $convertingFile = null;
     public ?string $conversionResult = null;
     public ?string $conversionError = null;
+    public bool $showMarkdownPreview = false;
+    public ?string $markdownHtml = null;
+    public ?string $previewFileName = null;
 
     protected FileSystemService $fileSystemService;
 
@@ -136,6 +140,48 @@ class FileBrowser extends Component
         }
 
         $this->convertingFile = null;
+    }
+
+    public function readFile(string $filePath): void
+    {
+        $this->conversionResult = null;
+        $this->conversionError = null;
+
+        if (!$this->fileSystemService->isValidPath($filePath)) {
+            $this->conversionError = 'Invalid file path.';
+            return;
+        }
+
+        if (strtolower(pathinfo($filePath, PATHINFO_EXTENSION)) !== 'md') {
+            $this->conversionError = 'Only Markdown files can be previewed.';
+            return;
+        }
+
+        if (!is_readable($filePath)) {
+            $this->conversionError = 'File is not readable.';
+            return;
+        }
+
+        $fileSize = filesize($filePath);
+        if ($fileSize > 512 * 1024) {
+            $this->conversionError = 'File is too large to preview (max 512 KB).';
+            return;
+        }
+
+        $content = file_get_contents($filePath);
+        $this->markdownHtml = Str::markdown($content, [
+            'html_input' => 'strip',
+            'allow_unsafe_links' => false,
+        ]);
+        $this->previewFileName = basename($filePath);
+        $this->showMarkdownPreview = true;
+    }
+
+    public function closePreview(): void
+    {
+        $this->showMarkdownPreview = false;
+        $this->markdownHtml = null;
+        $this->previewFileName = null;
     }
 
     public function getBreadcrumbs(): array

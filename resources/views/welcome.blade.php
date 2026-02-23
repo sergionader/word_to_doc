@@ -98,10 +98,6 @@
                     </div>
                 </div>
             </main>
-
-            <footer class="py-6 text-center text-xs text-neutral-400 dark:text-neutral-600">
-                Powered by Pandoc
-            </footer>
         </div>
     </body>
 </html>

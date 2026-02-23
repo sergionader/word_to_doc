@@ -427,7 +427,6 @@ The landing page (`welcome.blade.php`) features:
 - Hero section: "Word & Markdown, back and forth"
 - Three feature cards: Read Markdown, Right-Click Convert, File Browser
 - "Get Started" CTA button (links to login, or "Open File Browser" if authenticated)
-- Footer: "Powered by Pandoc"
 
 ---
 
