@@ -2,6 +2,24 @@
 
 A Laravel 12 web application for working with Word and Markdown files. Browse your local file system, read rendered Markdown directly in the browser, and convert bidirectionally between `.docx` and `.md` with a right-click. Drag and drop files for batch conversion.
 
+### Homepage
+
+The landing page gives you a quick overview of what the app does and a **Get Started** button to jump right in.
+
+![Homepage](docs/screenshot/01-hompage.png)
+
+### File Browser
+
+Navigate your file system with breadcrumb navigation and quick-access shortcuts to iCloud Drive, Desktop, Documents, and Downloads. Right-click any file to **Read** its rendered Markdown or **Convert** between `.docx` and `.md` in one click.
+
+![File Browser](docs/screenshot/02-fileManager.png)
+
+### Upload & Convert
+
+Drag and drop up to 5 files (`.docx` or `.md`, 50 MB each) onto the upload area and hit **Convert** for batch conversion.
+
+![Upload & Convert](docs/screenshot/03-upload.png)
+
 ## Features
 
 - **Markdown Reader** - Click any `.md` file to read it rendered with full formatting

@@ -1,6 +1,6 @@
 # Word to Markdown - Master Documentation
 
-**Last Updated:** 2026-02-22 17:50 | Branch: `master` | Commit: `d0c1788`
+**Last Updated:** 2026-02-22 20:30 | Branch: `master` | Commit: `66a2a2c`
 
 ---
 
@@ -8,7 +8,8 @@
 
 | Version | Date | Author | Branch / Commit | Summary |
 |---------|------|--------|-----------------|---------|
-| 1.3 | 2026-02-22 17:50 | Claude | `master` @ `d0c1788` | Added Markdown reader to file browser, fixed theme persistence after login, switched to sans-serif font, dynamic app name via config, email config docs. |
+| 1.3.1 | 2026-02-22 20:30 | Claude | `master` @ `66a2a2c` | Added @tailwindcss/typography to tech stack, documented published pagination views, modal component 4xl option, and README screenshots reference. Fixed commit hash for v1.3. |
+| 1.3 | 2026-02-22 17:50 | Claude | `master` @ `66a2a2c` | Added Markdown reader to file browser, fixed theme persistence after login, switched to sans-serif font, dynamic app name via config, email config docs. |
 | 1.2 | 2026-02-16 12:35 | Claude | `master` @ `9a364f1` | Changed admin seeder to generic credentials (admin@example.com), added admin seeding section to Operations. |
 | 1.1.1 | 2026-02-16 17:30 | Claude | `master` @ `9a364f1` | Documented ConversionService internal methods, FileSystemService readability checks, upload result label inversion, landing page bidirectional messaging. |
 | 1.1 | 2026-02-16 12:00 | Claude | `master` @ `9a364f1` | Added bidirectional conversion (MD to DOCX), updated ConversionService, FileUploader, FileBrowser, and landing page. |
@@ -62,6 +63,8 @@
 
 All conversions are tracked in a database with a full history view. An admin panel (Filament v4) provides user management and conversion analytics.
 
+Screenshots of each workflow are included in the project README (`docs/screenshot/`).
+
 ## 2. Tech Stack
 
 | Layer | Technology | Version |
@@ -74,6 +77,7 @@ All conversions are tracked in a database with a full history view. An admin pan
 | Admin Panel | Filament | 4.7+ |
 | Document Conversion | Pandoc (via `ueberdosis/pandoc`) | 0.9+ |
 | CSS Framework | Tailwind CSS | 3.x |
+| Tailwind Plugin | @tailwindcss/typography | (prose styling for Markdown reader) |
 | Build Tool | Vite | 7.x |
 | Auth Scaffolding | Laravel Breeze | 2.3+ (dev) |
 | Testing | Pest | 3.8+ |
@@ -419,6 +423,14 @@ The application supports **dark and light themes** with the following implementa
 ### Guest Layout (`layouts/guest.blade.php`)
 - Minimal centered layout for auth pages
 - Logo with app name from `config('app.name')` and theme toggle
+
+### Modal Component (`components/modal.blade.php`)
+- Breeze modal component extended with `4xl` max-width option
+- Supported sizes: `sm`, `md`, `lg`, `xl`, `2xl`, `4xl`
+- Note: The Markdown preview in FileBrowser uses its own custom modal (not this component)
+
+### Pagination Views
+Published and customized Laravel pagination views at `resources/views/vendor/pagination/` with dark mode support and amber accent colors matching the design system. Includes Tailwind, Bootstrap 4/5, Semantic UI, and default variants.
 
 ## 18. Landing Page
 
