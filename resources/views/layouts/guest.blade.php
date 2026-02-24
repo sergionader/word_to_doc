@@ -7,6 +7,9 @@
 
         <title>{{ config('app.name', 'Laravel') }}</title>
 
+        <!-- Favicon -->
+        <link rel="icon" href="{{ asset('favicon.svg') }}" type="image/svg+xml">
+
         <!-- Theme (prevent FOUC) -->
         <script>
             (function(){var t=localStorage.getItem('theme')||'dark';if(t==='dark')document.documentElement.classList.add('dark');})();
@@ -34,6 +37,11 @@
             <div class="w-full sm:max-w-md mt-6 px-6 py-4 bg-white dark:bg-neutral-900 shadow-md dark:shadow-neutral-900/50 overflow-hidden sm:rounded-lg border border-transparent dark:border-neutral-800">
                 {{ $slot }}
             </div>
+
+            <!-- Footer -->
+            <footer class="mt-auto py-4 text-center text-xs text-neutral-400 dark:text-neutral-600">
+                Powered by <a href="https://adaptai.chat/en/about" target="_blank" rel="noopener noreferrer" class="text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 transition-colors">TimeSaver Systems</a>
+            </footer>
         </div>
     </body>
 </html>

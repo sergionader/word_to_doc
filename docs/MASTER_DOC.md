@@ -1,6 +1,6 @@
 # Word to Markdown - Master Documentation
 
-**Last Updated:** 2026-02-22 20:30 | Branch: `master` | Commit: `66a2a2c`
+**Last Updated:** 2026-02-24 | Branch: `master` | Commit: `c69d8d2`
 
 ---
 
@@ -8,6 +8,7 @@
 
 | Version | Date | Author | Branch / Commit | Summary |
 |---------|------|--------|-----------------|---------|
+| 1.4 | 2026-02-24 | Claude | `master` @ `c69d8d2` | Added SVG favicon, added "Powered by TimeSaver Systems" footer to all layouts with link to adaptai.chat. |
 | 1.3.1 | 2026-02-22 20:30 | Claude | `master` @ `66a2a2c` | Added @tailwindcss/typography to tech stack, documented published pagination views, modal component 4xl option, and README screenshots reference. Fixed commit hash for v1.3. |
 | 1.3 | 2026-02-22 17:50 | Claude | `master` @ `66a2a2c` | Added Markdown reader to file browser, fixed theme persistence after login, switched to sans-serif font, dynamic app name via config, email config docs. |
 | 1.2 | 2026-02-16 12:35 | Claude | `master` @ `9a364f1` | Changed admin seeder to generic credentials (admin@example.com), added admin seeding section to Operations. |
@@ -413,16 +414,23 @@ The application supports **dark and light themes** with the following implementa
 
 ## 17. Layout & Navigation
 
+### Favicon
+
+All layouts include an SVG favicon (`public/favicon.svg`) — an amber document icon on a rounded square, matching the app's design tokens.
+
 ### App Layout (`layouts/app.blade.php`)
 - Top navigation bar with logo (links to browse), page links, theme toggle, user dropdown
 - App name pulled from `config('app.name')` — set via `APP_NAME` in `.env`
 - Navigation links: Browse, Upload, History
 - Responsive hamburger menu for mobile
 - User dropdown: Profile, Log Out
+- Footer: "Powered by TimeSaver Systems" linking to `https://adaptai.chat/en/about`
+- Uses `flex flex-col` with `flex-1` on main to push footer to the bottom
 
 ### Guest Layout (`layouts/guest.blade.php`)
 - Minimal centered layout for auth pages
 - Logo with app name from `config('app.name')` and theme toggle
+- Footer: "Powered by TimeSaver Systems" with `mt-auto` positioning
 
 ### Modal Component (`components/modal.blade.php`)
 - Breeze modal component extended with `4xl` max-width option
@@ -439,6 +447,7 @@ The landing page (`welcome.blade.php`) features:
 - Hero section: "Word & Markdown, back and forth"
 - Three feature cards: Read Markdown, Right-Click Convert, File Browser
 - "Get Started" CTA button (links to login, or "Open File Browser" if authenticated)
+- Footer: "Powered by TimeSaver Systems" linking to `https://adaptai.chat/en/about`
 
 ---
 

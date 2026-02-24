@@ -7,6 +7,9 @@
 
         <title>{{ config('app.name', 'Laravel') }}</title>
 
+        <!-- Favicon -->
+        <link rel="icon" href="{{ asset('favicon.svg') }}" type="image/svg+xml">
+
         <!-- Theme (prevent FOUC) -->
         <script>
             (function(){var t=localStorage.getItem('theme')||'dark';if(t==='dark')document.documentElement.classList.add('dark');})();
@@ -20,7 +23,7 @@
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
     <body class="font-sans antialiased">
-        <div class="min-h-screen bg-neutral-50 dark:bg-neutral-950">
+        <div class="min-h-screen flex flex-col bg-neutral-50 dark:bg-neutral-950">
             <livewire:layout.navigation />
 
             <!-- Page Heading -->
@@ -33,9 +36,14 @@
             @endif
 
             <!-- Page Content -->
-            <main>
+            <main class="flex-1">
                 {{ $slot }}
             </main>
+
+            <!-- Footer -->
+            <footer class="py-4 text-center text-xs text-neutral-400 dark:text-neutral-600">
+                Powered by <a href="https://adaptai.chat/en/about" target="_blank" rel="noopener noreferrer" class="text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 transition-colors">TimeSaver Systems</a>
+            </footer>
         </div>
     </body>
 </html>
