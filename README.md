@@ -101,6 +101,22 @@ This produces `.dmg` installers in `nativephp/electron/dist/` for both Apple Sil
 
 > **Note:** The built app is unsigned. On macOS, right-click the app and select **Open**, or go to **System Settings > Privacy & Security > Open Anyway**.
 
+### Versioning
+
+The app version is set manually in `config/nativephp.php` (or via `NATIVEPHP_APP_VERSION` in `.env`). It does **not** auto-increment — bump it before each release:
+
+```php
+// config/nativephp.php
+'version' => env('NATIVEPHP_APP_VERSION', '1.0.0'),
+```
+
+```env
+# Or set it in .env
+NATIVEPHP_APP_VERSION=1.1.0
+```
+
+The version appears in the DMG filename and is used by the built-in updater to determine if the app needs updating.
+
 ### Desktop App Details
 
 - Auto-login: no authentication required — a local user is created automatically on first launch
