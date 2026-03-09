@@ -1,6 +1,6 @@
 # Word to Markdown - Master Documentation
 
-**Last Updated:** 2026-02-24 | Branch: `master` | Commit: `c69d8d2`
+**Last Updated:** 2026-03-09 | Branch: `master` | Commit: `1287c64`
 
 ---
 
@@ -8,6 +8,7 @@
 
 | Version | Date | Author | Branch / Commit | Summary |
 |---------|------|--------|-----------------|---------|
+| 1.5 | 2026-03-09 | Claude | `master` @ `1287c64` | Added file browser sorting/dates, pinned folders, settings page, auto-login middleware, NativePHP desktop app support. |
 | 1.4 | 2026-02-24 | Claude | `master` @ `c69d8d2` | Added SVG favicon, added "Powered by TimeSaver Systems" footer to all layouts with link to adaptai.chat. |
 | 1.3.1 | 2026-02-22 20:30 | Claude | `master` @ `66a2a2c` | Added @tailwindcss/typography to tech stack, documented published pagination views, modal component 4xl option, and README screenshots reference. Fixed commit hash for v1.3. |
 | 1.3 | 2026-02-22 17:50 | Claude | `master` @ `66a2a2c` | Added Markdown reader to file browser, fixed theme persistence after login, switched to sans-serif font, dynamic app name via config, email config docs. |
@@ -33,22 +34,24 @@
   - [8. File Upload & Conversion](#8-file-upload--conversion)
   - [9. Conversion History](#9-conversion-history)
   - [10. Profile Management](#10-profile-management)
+  - [11. Settings](#11-settings)
 - [Part IV: Admin Panel](#part-iv-admin-panel)
-  - [11. Dashboard & Widgets](#11-dashboard--widgets)
-  - [12. User Management](#12-user-management)
-  - [13. Conversion Management](#13-conversion-management)
+  - [12. Dashboard & Widgets](#12-dashboard--widgets)
+  - [13. User Management](#13-user-management)
+  - [14. Conversion Management](#14-conversion-management)
 - [Part V: Services](#part-v-services)
-  - [14. ConversionService](#14-conversionservice)
-  - [15. FileSystemService](#15-filesystemservice)
+  - [15. ConversionService](#15-conversionservice)
+  - [16. FileSystemService](#16-filesystemservice)
 - [Part VI: Routes](#part-vi-routes)
 - [Part VII: Frontend & Design](#part-vii-frontend--design)
-  - [16. Theme System](#16-theme-system)
-  - [17. Layout & Navigation](#17-layout--navigation)
-  - [18. Landing Page](#18-landing-page)
+  - [17. Theme System](#17-theme-system)
+  - [18. Layout & Navigation](#18-layout--navigation)
+  - [19. Landing Page](#19-landing-page)
 - [Part VIII: Operations](#part-viii-operations)
-  - [19. Development Setup](#19-development-setup)
-  - [20. Email Configuration](#20-email-configuration)
-  - [21. External Dependencies](#21-external-dependencies)
+  - [20. Development Setup](#20-development-setup)
+  - [21. NativePHP Desktop App](#21-nativephp-desktop-app)
+  - [22. Email Configuration](#22-email-configuration)
+  - [23. External Dependencies](#23-external-dependencies)
 
 ---
 
@@ -62,7 +65,7 @@
 2. **Upload & Convert** - Drag-and-drop or upload up to 5 files (.docx or .md) at once for batch conversion with download links.
 3. **Markdown Reader** - Click any `.md` file in the file browser to view it rendered with full formatting in a modal overlay.
 
-All conversions are tracked in a database with a full history view. An admin panel (Filament v4) provides user management and conversion analytics.
+All conversions are tracked in a database with a full history view. An admin panel (Filament v4) provides user management and conversion analytics. The app also runs as a standalone macOS desktop application via NativePHP (Electron).
 
 Screenshots of each workflow are included in the project README (`docs/screenshot/`).
 
@@ -83,6 +86,7 @@ Screenshots of each workflow are included in the project README (`docs/screensho
 | Auth Scaffolding | Laravel Breeze | 2.3+ (dev) |
 | Testing | Pest | 3.8+ |
 | E2E Testing | Playwright | 1.58+ |
+| Desktop App | NativePHP (Electron) | 2.1+ |
 | Database | SQLite | (default) |
 
 ## 3. Architecture
@@ -96,15 +100,21 @@ app/
 │   └── Widgets/
 │       ├── StatsOverview.php
 │       └── RecentConversions.php
-├── Http/Controllers/
-│   └── ConversionController.php   # Download endpoint
+├── Http/
+│   ├── Controllers/
+│   │   └── ConversionController.php   # Download endpoint
+│   └── Middleware/
+│       └── AutoLoginLocalhost.php     # Auto-login on localhost requests
 ├── Livewire/
 │   ├── FileBrowser.php            # File system navigation + conversion
 │   ├── FileUploader.php           # Drag-and-drop upload + batch conversion
-│   └── ConversionHistory.php      # Paginated history table
+│   ├── ConversionHistory.php      # Paginated history table
+│   └── Settings.php               # User settings (default folder, pinned folders)
 ├── Models/
 │   ├── User.php
 │   └── Conversion.php
+├── Providers/
+│   └── NativeAppServiceProvider.php   # NativePHP desktop app config
 ├── Services/
 │   ├── ConversionService.php      # Pandoc conversion logic
 │   └── FileSystemService.php      # File system browsing with path validation
@@ -131,6 +141,8 @@ The application follows a Livewire-first architecture. Full-page Livewire compon
 | `email_verified_at` | timestamp | nullable | NULL | Email verification timestamp |
 | `password` | string(255) | required | - | Hashed password |
 | `last_used_folder` | string(255) | nullable | NULL | Last browsed directory path |
+| `default_folder` | string(255) | nullable | NULL | Default folder to open on login |
+| `pinned_folders` | json | nullable | NULL | Array of pinned folder objects (`[{name, path}]`) |
 | `is_admin` | boolean | - | false | Admin panel access flag |
 | `remember_token` | string(100) | nullable | NULL | Remember me token |
 | `created_at` | timestamp | - | - | Creation timestamp |
@@ -159,10 +171,12 @@ The application follows a Livewire-first architecture. Full-page Livewire compon
   - `conversions()` → HasMany → `Conversion`
 - **Access Control:**
   - `canAccessPanel(Panel $panel): bool` → returns `$this->is_admin`
+- **Fillable:** `name`, `email`, `password`, `last_used_folder`, `default_folder`, `pinned_folders`, `is_admin`
 - **Casts:**
   - `email_verified_at` → datetime
   - `password` → hashed
   - `is_admin` → boolean
+  - `pinned_folders` → array
 
 ### Conversion Model (`App\Models\Conversion`)
 
@@ -187,6 +201,22 @@ Authentication is provided by **Laravel Breeze** (Livewire/Volt stack) with the 
 
 The dashboard route (`/dashboard`) redirects to `/browse` (the file browser).
 
+### AutoLoginLocalhost Middleware
+
+**Class:** `App\Http\Middleware\AutoLoginLocalhost`
+
+Registered globally on all web routes via `bootstrap/app.php`. On localhost requests (`127.0.0.1`, `::1`, `localhost`), automatically logs in the first user in the database. If no user exists, creates a default one:
+
+| Field | Value |
+|-------|-------|
+| Name | `Local User` |
+| Email | `local@desktop.app` |
+| Password | Random 32-char string |
+| Admin | `true` |
+| Email Verified | Yes |
+
+This enables the NativePHP desktop app to work without a login screen, and also provides a convenient auto-login for local development.
+
 ## 7. File Browser
 
 **Component:** `App\Livewire\FileBrowser`
@@ -197,14 +227,20 @@ Features:
 - Navigates the server file system within the configured `browse_root`
 - Shows directories, `.docx`, and `.md` files (hidden files are excluded)
 - Directories listed first, then files, both alphabetically sorted
+- **Column sorting** - Click column headers (Name, Size, Modified) to sort; directories always stay on top
+- **File metadata** - Each item includes `size`, `created_at`, and `modified_at` timestamps from `stat()`
 - **Markdown Reader** - Click any `.md` file to read it rendered in a modal overlay
 - **Quick Navigation** shortcuts: iCloud Drive, Desktop, Documents, Downloads
+- **Pinned Folders** - Pin frequently used directories for quick access; stored per-user in `pinned_folders` JSON column
+- **Default Folder** - Set a folder as the default starting location (used when no `last_used_folder` exists)
 - **Breadcrumb** navigation with clickable path segments
 - **Grid/List** view toggle
-- **Right-click context menu** on files with dynamic actions:
+- **Right-click context menu** on files/directories with dynamic actions:
   - `.md` files → "Read" (preview) and "Convert to Word"
   - `.docx` files → "Convert to Markdown"
+  - Directories → "Pin Folder" / "Unpin Folder", "Set as Default"
 - Remembers the user's last visited folder (`last_used_folder` on User model)
+- Falls back to `default_folder`, then `browse_root` on mount
 - Converted files appear alongside source files in the listing
 
 ### Markdown Reader
@@ -269,6 +305,17 @@ Standard Breeze profile management with:
 - Update password
 - Delete account
 
+## 11. Settings
+
+**Component:** `App\Livewire\Settings`
+**Route:** `GET /settings` (auth required)
+**View:** `livewire/settings.blade.php`
+
+User preferences page with:
+- **Default Folder** - Set the folder that opens when no recent folder exists. Validates the path exists and is within `browse_root` before saving.
+- **Pinned Folders** - View and unpin folders from the pinned list. Folders are pinned via the file browser context menu.
+- `clearDefault()` method resets the default folder to null.
+
 ---
 
 # Part IV: Admin Panel
@@ -279,7 +326,7 @@ The admin panel is powered by **Filament v4** and accessible at `/admin`.
 
 **Theme:** Primary color set to Amber.
 
-## 11. Dashboard & Widgets
+## 12. Dashboard & Widgets
 
 ### StatsOverview Widget
 Displays four stat cards:
@@ -295,7 +342,7 @@ A full-width table showing the 10 most recent conversions with:
 - Status badge (color-coded)
 - Creation date
 
-## 12. User Management
+## 13. User Management
 
 **Resource:** `App\Filament\Resources\UserResource`
 
@@ -305,7 +352,7 @@ A full-width table showing the 10 most recent conversions with:
 
 **Form Fields:** Name, Email, Password (optional on edit), Admin toggle
 
-## 13. Conversion Management
+## 14. Conversion Management
 
 **Resource:** `App\Filament\Resources\ConversionResource`
 
@@ -319,7 +366,7 @@ A full-width table showing the 10 most recent conversions with:
 
 # Part V: Services
 
-## 14. ConversionService
+## 15. ConversionService
 
 **Class:** `App\Services\ConversionService`
 
@@ -342,7 +389,7 @@ Converts a Word document to Markdown using Pandoc (`--from docx --to markdown`).
 
 Converts a Markdown file to Word using Pandoc (`--from markdown --to docx`).
 
-## 15. FileSystemService
+## 16. FileSystemService
 
 **Class:** `App\Services\FileSystemService`
 
@@ -354,7 +401,7 @@ Provides secure file system browsing within a configurable root directory.
 
 | Method | Signature | Description |
 |--------|-----------|-------------|
-| `listDirectory` | `(string $path): array` | Lists directories, `.docx`, and `.md` files in the given path, sorted (dirs first, then files, alphabetically). Skips hidden files. Checks `is_readable()` before scanning and wraps `scandir()` in a try/catch to gracefully handle permission errors. |
+| `listDirectory` | `(string $path): array` | Lists directories, `.docx`, and `.md` files in the given path, sorted (dirs first, then files, alphabetically). Skips hidden files. Each item includes `name`, `path`, `type`, `size`, `created_at`, and `modified_at` (unix timestamps via `stat()`). Checks `is_readable()` before scanning and wraps `scandir()` in a try/catch to gracefully handle permission errors. |
 | `isValidPath` | `(string $path): bool` | Validates that the resolved path is within the browse root. Prevents directory traversal. |
 | `getParentDirectory` | `(string $path): string` | Returns the parent directory, or the root if the parent is outside bounds. |
 
@@ -366,13 +413,14 @@ Provides secure file system browsing within a configurable root directory.
 
 | Method | URI | Handler | Name | Middleware |
 |--------|-----|---------|------|------------|
-| GET | `/` | welcome view | - | - |
+| GET | `/` | welcome view (or redirect → `/browse` in NativePHP) | - | - |
 | GET | `/dashboard` | redirect → `/browse` | dashboard | auth, verified |
 | GET | `/browse` | `FileBrowser` (Livewire) | browse | auth, verified |
 | GET | `/convert` | `FileUploader` (Livewire) | convert | auth, verified |
 | GET | `/history` | `ConversionHistory` (Livewire) | history | auth, verified |
 | GET | `/download/{conversion}` | `ConversionController@download` | conversion.download | auth, verified |
 | GET | `/profile` | profile view | profile | auth |
+| GET | `/settings` | `Settings` (Livewire) | settings | auth |
 
 ## Admin Routes
 
@@ -394,7 +442,7 @@ Provides secure file system browsing within a configurable root directory.
 
 # Part VII: Frontend & Design
 
-## 16. Theme System
+## 17. Theme System
 
 The application supports **dark and light themes** with the following implementation:
 
@@ -412,7 +460,7 @@ The application supports **dark and light themes** with the following implementa
 - **Font:** Outfit (sans-serif) for all text
 - **Border radius:** rounded-md (buttons), rounded-lg (cards)
 
-## 17. Layout & Navigation
+## 18. Layout & Navigation
 
 ### Favicon
 
@@ -421,7 +469,7 @@ All layouts include an SVG favicon (`public/favicon.svg`) — an amber document 
 ### App Layout (`layouts/app.blade.php`)
 - Top navigation bar with logo (links to browse), page links, theme toggle, user dropdown
 - App name pulled from `config('app.name')` — set via `APP_NAME` in `.env`
-- Navigation links: Browse, Upload, History
+- Navigation links: Browse, Upload, History, Settings
 - Responsive hamburger menu for mobile
 - User dropdown: Profile, Log Out
 - Footer: "Powered by TimeSaver Systems" linking to `https://adaptai.chat/en/about`
@@ -440,7 +488,7 @@ All layouts include an SVG favicon (`public/favicon.svg`) — an amber document 
 ### Pagination Views
 Published and customized Laravel pagination views at `resources/views/vendor/pagination/` with dark mode support and amber accent colors matching the design system. Includes Tailwind, Bootstrap 4/5, Semantic UI, and default variants.
 
-## 18. Landing Page
+## 19. Landing Page
 
 The landing page (`welcome.blade.php`) features:
 - Header with app name from `config('app.name')`, theme toggle, login/register links
@@ -453,7 +501,7 @@ The landing page (`welcome.blade.php`) features:
 
 # Part VIII: Operations
 
-## 19. Development Setup
+## 20. Development Setup
 
 ### Quick Start
 
@@ -492,7 +540,47 @@ Uses `updateOrCreate` so it can be re-run safely.
 composer test     # clears config cache + runs pest tests
 ```
 
-## 20. Email Configuration
+## 21. NativePHP Desktop App
+
+The application can run as a standalone macOS desktop app using **NativePHP** (Electron).
+
+**Package:** `nativephp/desktop` (^2.1)
+**Provider:** `App\Providers\NativeAppServiceProvider`
+**Config:** `config/nativephp.php`
+
+### Running in Development
+
+```bash
+composer native:dev
+```
+
+Launches the app in an Electron window with Vite hot-reloading. Runs concurrently: `php artisan native:run` + `npm run dev`.
+
+### Building for Distribution
+
+```bash
+php artisan native:build --no-interaction
+```
+
+Produces `.dmg` installers in `nativephp/electron/dist/` for both Apple Silicon (arm64) and Intel (x64).
+
+> The built app is unsigned. On macOS, right-click → Open, or System Settings → Privacy & Security → Open Anyway.
+
+### NativeAppServiceProvider Configuration
+
+- **Window:** 1200x800, standard title bar
+- **Menu:** App, File, Edit, View, Window (native macOS menus)
+- **PHP ini:** `memory_limit` 256M, `upload_max_filesize` 50M, `post_max_size` 55M
+
+### Desktop App Behavior
+
+- Root route (`/`) redirects to `/browse` when `config('nativephp-internal.running')` is true
+- `AutoLoginLocalhost` middleware auto-creates and logs in a local user (no login screen)
+- Vite `npm run build` runs as a prebuild hook so assets are always compiled before building
+- App ID: `com.timesaversystems.wordtomd`
+- Requires **Pandoc** installed on the host system (not bundled)
+
+## 22. Email Configuration
 
 By default, the mailer is set to `log`, meaning all emails (password resets, verification, etc.) are written to `storage/logs/` instead of being sent.
 
@@ -511,7 +599,7 @@ MAIL_FROM_NAME="${APP_NAME}"
 
 Any SMTP provider works: Mailgun, Postmark, AWS SES, Mailtrap (for testing), etc. See the [Laravel Mail docs](https://laravel.com/docs/12.x/mail) for all supported drivers.
 
-## 21. External Dependencies
+## 23. External Dependencies
 
 ### Pandoc
 
