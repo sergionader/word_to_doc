@@ -4,9 +4,16 @@ use App\Http\Controllers\ConversionController;
 use App\Livewire\ConversionHistory;
 use App\Livewire\FileBrowser;
 use App\Livewire\FileUploader;
+use App\Livewire\Settings;
 use Illuminate\Support\Facades\Route;
 
-Route::view('/', 'welcome');
+// In NativePHP, skip the landing page and go straight to browse
+if (config('nativephp-internal.running')) {
+    Route::get('/', fn () => redirect()->route('browse'));
+} else {
+    Route::view('/', 'welcome');
+}
+
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', function () {
@@ -22,5 +29,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
 Route::view('profile', 'profile')
     ->middleware(['auth'])
     ->name('profile');
+
+Route::get('settings', Settings::class)
+    ->middleware(['auth'])
+    ->name('settings');
 
 require __DIR__.'/auth.php';

@@ -14,12 +14,15 @@ class FileBrowser extends Component
     public string $currentPath = '';
     public string $viewMode = 'list';
     public array $items = [];
+    public string $sortBy = 'name';
+    public string $sortDirection = 'asc';
     public ?string $convertingFile = null;
     public ?string $conversionResult = null;
     public ?string $conversionError = null;
     public bool $showMarkdownPreview = false;
     public ?string $markdownHtml = null;
     public ?string $previewFileName = null;
+    public ?string $previewFilePath = null;
 
     protected FileSystemService $fileSystemService;
 
@@ -35,6 +38,8 @@ class FileBrowser extends Component
 
         if ($lastFolder && $this->fileSystemService->isValidPath($lastFolder) && is_dir($lastFolder)) {
             $this->currentPath = $lastFolder;
+        } elseif ($user->default_folder && $this->fileSystemService->isValidPath($user->default_folder) && is_dir($user->default_folder)) {
+            $this->currentPath = $user->default_folder;
         } else {
             $this->currentPath = config('filesystems.browse_root', '/');
         }
@@ -61,9 +66,45 @@ class FileBrowser extends Component
         $this->navigateTo($parent);
     }
 
+    public function refreshDirectory(): void
+    {
+        $this->loadDirectory();
+    }
+
     public function toggleViewMode(): void
     {
         $this->viewMode = $this->viewMode === 'grid' ? 'list' : 'grid';
+    }
+
+    public function sortItems(string $field): void
+    {
+        if ($this->sortBy === $field) {
+            $this->sortDirection = $this->sortDirection === 'asc' ? 'desc' : 'asc';
+        } else {
+            $this->sortBy = $field;
+            $this->sortDirection = 'asc';
+        }
+
+        $this->applySorting();
+    }
+
+    protected function applySorting(): void
+    {
+        usort($this->items, function ($a, $b) {
+            // Directories always first
+            if ($a['type'] !== $b['type']) {
+                return $a['type'] === 'directory' ? -1 : 1;
+            }
+
+            $field = $this->sortBy;
+            $direction = $this->sortDirection === 'asc' ? 1 : -1;
+
+            if ($field === 'name') {
+                return $direction * strcasecmp($a['name'], $b['name']);
+            }
+
+            return $direction * (($a[$field] ?? 0) <=> ($b[$field] ?? 0));
+        });
     }
 
     public function getQuickNavItems(): array
@@ -92,6 +133,68 @@ class FileBrowser extends Component
         }
 
         return $items;
+    }
+
+    public function getPinnedFolders(): array
+    {
+        $user = Auth::user();
+        $pinned = $user->pinned_folders ?? [];
+
+        return array_filter($pinned, function ($folder) {
+            return is_dir($folder['path']) && $this->fileSystemService->isValidPath($folder['path']);
+        });
+    }
+
+    public function pinFolder(string $path): void
+    {
+        if (!$this->fileSystemService->isValidPath($path) || !is_dir($path)) {
+            return;
+        }
+
+        $user = Auth::user();
+        $pinned = $user->pinned_folders ?? [];
+
+        foreach ($pinned as $folder) {
+            if ($folder['path'] === $path) {
+                return;
+            }
+        }
+
+        $pinned[] = ['name' => basename($path), 'path' => $path];
+        $user->update(['pinned_folders' => $pinned]);
+    }
+
+    public function unpinFolder(string $path): void
+    {
+        $user = Auth::user();
+        $pinned = $user->pinned_folders ?? [];
+
+        $pinned = array_values(array_filter($pinned, fn($f) => $f['path'] !== $path));
+        $user->update(['pinned_folders' => $pinned]);
+    }
+
+    public function isFolderPinned(string $path): bool
+    {
+        $user = Auth::user();
+        $pinned = $user->pinned_folders ?? [];
+
+        foreach ($pinned as $folder) {
+            if ($folder['path'] === $path) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public function setAsDefault(string $path): void
+    {
+        if (!$this->fileSystemService->isValidPath($path) || !is_dir($path)) {
+            return;
+        }
+
+        $user = Auth::user();
+        $user->update(['default_folder' => $path]);
+        $this->conversionResult = 'Default folder set to: ' . basename($path);
     }
 
     public function convertFile(string $filePath): void
@@ -174,7 +277,24 @@ class FileBrowser extends Component
             'allow_unsafe_links' => false,
         ]);
         $this->previewFileName = basename($filePath);
+        $this->previewFilePath = $filePath;
         $this->showMarkdownPreview = true;
+    }
+
+    public function refreshPreview(): void
+    {
+        if ($this->previewFilePath) {
+            $this->readFile($this->previewFilePath);
+        }
+    }
+
+    public function convertPreviewFile(): void
+    {
+        if ($this->previewFilePath) {
+            $filePath = $this->previewFilePath;
+            $this->closePreview();
+            $this->convertFile($filePath);
+        }
     }
 
     public function closePreview(): void
@@ -182,6 +302,7 @@ class FileBrowser extends Component
         $this->showMarkdownPreview = false;
         $this->markdownHtml = null;
         $this->previewFileName = null;
+        $this->previewFilePath = null;
     }
 
     public function getBreadcrumbs(): array
@@ -205,6 +326,7 @@ class FileBrowser extends Component
     protected function loadDirectory(): void
     {
         $this->items = $this->fileSystemService->listDirectory($this->currentPath);
+        $this->applySorting();
     }
 
     public function render()
@@ -212,6 +334,7 @@ class FileBrowser extends Component
         return view('livewire.file-browser', [
             'breadcrumbs' => $this->getBreadcrumbs(),
             'quickNavItems' => $this->getQuickNavItems(),
+            'pinnedFolders' => $this->getPinnedFolders(),
         ])->layout('layouts.app');
     }
 }

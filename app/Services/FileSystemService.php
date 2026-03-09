@@ -43,17 +43,24 @@ class FileSystemService
             $fullPath = $path . '/' . $entry;
 
             if (is_dir($fullPath)) {
+                $stat = stat($fullPath);
                 $items[] = [
                     'name' => $entry,
                     'path' => $fullPath,
                     'type' => 'directory',
+                    'size' => 0,
+                    'created_at' => $stat ? $stat['ctime'] : 0,
+                    'modified_at' => $stat ? $stat['mtime'] : 0,
                 ];
             } elseif (str_ends_with(strtolower($entry), '.docx') || str_ends_with(strtolower($entry), '.md')) {
+                $stat = stat($fullPath);
                 $items[] = [
                     'name' => $entry,
                     'path' => $fullPath,
                     'type' => 'file',
                     'size' => filesize($fullPath),
+                    'created_at' => $stat ? $stat['ctime'] : 0,
+                    'modified_at' => $stat ? $stat['mtime'] : 0,
                 ];
             }
         }

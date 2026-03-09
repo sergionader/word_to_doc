@@ -19,6 +19,8 @@ class User extends Authenticatable implements FilamentUser
         'email',
         'password',
         'last_used_folder',
+        'default_folder',
+        'pinned_folders',
         'is_admin',
     ];
 
@@ -33,6 +35,7 @@ class User extends Authenticatable implements FilamentUser
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'is_admin' => 'boolean',
+            'pinned_folders' => 'array',
         ];
     }
 

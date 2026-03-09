@@ -90,6 +90,18 @@
                         </button>
                     @endforeach
 
+                    {{-- Pinned folders --}}
+                    @foreach ($pinnedFolders as $pinned)
+                        <button wire:click="navigateTo('{{ $pinned['path'] }}')"
+                                class="inline-flex items-center px-3 py-1.5 border border-amber-300 dark:border-amber-700 text-sm font-medium rounded-md text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/20 hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-colors"
+                                title="{{ $pinned['path'] }}">
+                            <svg class="w-4 h-4 mr-1 text-amber-500 dark:text-amber-400" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2m4-2l-3 3h2v3h2V5h2l-3-3z"/>
+                            </svg>
+                            {{ $pinned['name'] }}
+                        </button>
+                    @endforeach
+
                     <div class="flex-1"></div>
 
                     {{-- View mode toggle --}}
@@ -105,6 +117,26 @@
                         @endif
                     </button>
 
+                    {{-- Refresh button --}}
+                    <button wire:click="refreshDirectory" class="inline-flex items-center px-2 py-1.5 border border-neutral-300 dark:border-neutral-600 text-sm rounded-md text-neutral-700 dark:text-neutral-300 bg-white dark:bg-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-700 transition-colors" title="Refresh directory">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                    </button>
+
+                    {{-- Copy path button --}}
+                    <button x-data="{ copied: false }"
+                            x-on:click="navigator.clipboard.writeText('{{ $currentPath }}').then(() => { copied = true; setTimeout(() => copied = false, 2000) })"
+                            class="inline-flex items-center px-2 py-1.5 border border-neutral-300 dark:border-neutral-600 text-sm rounded-md text-neutral-700 dark:text-neutral-300 bg-white dark:bg-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-700 transition-colors"
+                            title="Copy path">
+                        <svg x-show="!copied" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                        </svg>
+                        <svg x-show="copied" x-cloak class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                        </svg>
+                    </button>
+
                     <span class="text-sm text-neutral-500 dark:text-neutral-400 ml-2 truncate max-w-xs">{{ $currentPath }}</span>
                 </div>
 
@@ -113,13 +145,14 @@
                     @if (empty($items))
                         <p class="text-neutral-500 dark:text-neutral-400 text-center py-8">This directory is empty or contains no convertible files.</p>
                     @else
-                        <div x-data="{ contextMenu: { show: false, x: 0, y: 0, filePath: '' } }" @click="contextMenu.show = false">
+                        <div x-data="{ contextMenu: { show: false, x: 0, y: 0, filePath: '', isDir: false, isPinned: false } }" @click="contextMenu.show = false">
                             @if ($viewMode === 'grid')
                                 {{-- Grid View --}}
                                 <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
                                     @foreach ($items as $item)
                                         @if ($item['type'] === 'directory')
                                             <div wire:click="navigateTo('{{ $item['path'] }}')"
+                                                 @contextmenu.prevent="contextMenu = { show: true, x: $event.clientX, y: $event.clientY, filePath: '{{ $item['path'] }}', isDir: true, isPinned: {{ $this->isFolderPinned($item['path']) ? 'true' : 'false' }} }"
                                                  class="flex flex-col items-center p-4 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 cursor-pointer group transition-colors">
                                                 <svg class="w-12 h-12 text-amber-400 dark:text-amber-500 group-hover:text-amber-500 dark:group-hover:text-amber-400" fill="currentColor" viewBox="0 0 24 24">
                                                     <path d="M10 4H4a2 2 0 00-2 2v12a2 2 0 002 2h16a2 2 0 002-2V8a2 2 0 00-2-2h-8l-2-2z" />
@@ -131,7 +164,7 @@
                                                  @if (str_ends_with(strtolower($item['name']), '.md'))
                                                      wire:click="readFile('{{ $item['path'] }}')"
                                                  @endif
-                                                 @contextmenu.prevent="contextMenu = { show: true, x: $event.clientX, y: $event.clientY, filePath: '{{ $item['path'] }}' }">
+                                                 @contextmenu.prevent="contextMenu = { show: true, x: $event.clientX, y: $event.clientY, filePath: '{{ $item['path'] }}', isDir: false, isPinned: false }">
                                                 <svg class="w-12 h-12 text-blue-400 dark:text-blue-500 group-hover:text-blue-500 dark:group-hover:text-blue-400" fill="currentColor" viewBox="0 0 24 24">
                                                     <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z" />
                                                     <path d="M14 2v6h6" fill="none" stroke="currentColor" stroke-width="1" />
@@ -143,57 +176,146 @@
                                 </div>
                             @else
                                 {{-- List View --}}
-                                <div class="divide-y divide-neutral-100 dark:divide-neutral-800">
-                                    @foreach ($items as $item)
-                                        @if ($item['type'] === 'directory')
-                                            <div wire:click="navigateTo('{{ $item['path'] }}')"
-                                                 class="flex items-center px-3 py-2.5 rounded hover:bg-neutral-100 dark:hover:bg-neutral-800 cursor-pointer group transition-colors">
-                                                <svg class="w-5 h-5 text-amber-400 dark:text-amber-500 group-hover:text-amber-500 dark:group-hover:text-amber-400 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
-                                                    <path d="M10 4H4a2 2 0 00-2 2v12a2 2 0 002 2h16a2 2 0 002-2V8a2 2 0 00-2-2h-8l-2-2z" />
-                                                </svg>
-                                                <span class="text-sm text-neutral-700 dark:text-neutral-300 truncate">{{ $item['name'] }}</span>
-                                            </div>
-                                        @else
-                                            <div class="flex items-center px-3 py-2.5 rounded hover:bg-neutral-100 dark:hover:bg-neutral-800 cursor-pointer group transition-colors"
-                                                 @if (str_ends_with(strtolower($item['name']), '.md'))
-                                                     wire:click="readFile('{{ $item['path'] }}')"
-                                                 @endif
-                                                 @contextmenu.prevent="contextMenu = { show: true, x: $event.clientX, y: $event.clientY, filePath: '{{ $item['path'] }}' }">
-                                                <svg class="w-5 h-5 text-blue-400 dark:text-blue-500 group-hover:text-blue-500 dark:group-hover:text-blue-400 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
-                                                    <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z" />
-                                                    <path d="M14 2v6h6" fill="none" stroke="currentColor" stroke-width="1" />
-                                                </svg>
-                                                <span class="text-sm text-neutral-700 dark:text-neutral-300 truncate flex-1">{{ $item['name'] }}</span>
-                                                @if (isset($item['size']))
-                                                    <span class="text-xs text-neutral-400 dark:text-neutral-500 ml-4">{{ number_format($item['size'] / 1024, 1) }} KB</span>
-                                                @endif
-                                            </div>
-                                        @endif
-                                    @endforeach
-                                </div>
+                                {{-- List View Table --}}
+                                <table class="w-full table-fixed">
+                                    <colgroup>
+                                        <col />
+                                        <col style="width: 100px" />
+                                        <col style="width: 140px" />
+                                        <col style="width: 140px" />
+                                    </colgroup>
+                                    <thead>
+                                        <tr class="border-b border-neutral-200 dark:border-neutral-700 text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+                                            <th class="text-left px-3 py-2">
+                                                <button wire:click="sortItems('name')" class="hover:text-neutral-700 dark:hover:text-neutral-200 transition-colors">
+                                                    Name @if ($sortBy === 'name'){{ $sortDirection === 'asc' ? "\u{25B2}" : "\u{25BC}" }}@endif
+                                                </button>
+                                            </th>
+                                            <th class="text-right px-3 py-2">
+                                                <button wire:click="sortItems('size')" class="w-full text-right hover:text-neutral-700 dark:hover:text-neutral-200 transition-colors">
+                                                    Size @if ($sortBy === 'size'){{ $sortDirection === 'asc' ? "\u{25B2}" : "\u{25BC}" }}@endif
+                                                </button>
+                                            </th>
+                                            <th class="text-right px-3 py-2">
+                                                <button wire:click="sortItems('created_at')" class="w-full text-right hover:text-neutral-700 dark:hover:text-neutral-200 transition-colors">
+                                                    Created @if ($sortBy === 'created_at'){{ $sortDirection === 'asc' ? "\u{25B2}" : "\u{25BC}" }}@endif
+                                                </button>
+                                            </th>
+                                            <th class="text-right px-3 py-2">
+                                                <button wire:click="sortItems('modified_at')" class="w-full text-right hover:text-neutral-700 dark:hover:text-neutral-200 transition-colors">
+                                                    Modified @if ($sortBy === 'modified_at'){{ $sortDirection === 'asc' ? "\u{25B2}" : "\u{25BC}" }}@endif
+                                                </button>
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-neutral-100 dark:divide-neutral-800">
+                                        @foreach ($items as $item)
+                                            @if ($item['type'] === 'directory')
+                                                <tr wire:click="navigateTo('{{ $item['path'] }}')"
+                                                    @contextmenu.prevent="contextMenu = { show: true, x: $event.clientX, y: $event.clientY, filePath: '{{ $item['path'] }}', isDir: true, isPinned: {{ $this->isFolderPinned($item['path']) ? 'true' : 'false' }} }"
+                                                    class="hover:bg-neutral-100 dark:hover:bg-neutral-800 cursor-pointer group transition-colors">
+                                                    <td class="px-3 py-2.5">
+                                                        <div class="flex items-center">
+                                                            <svg class="w-5 h-5 text-amber-400 dark:text-amber-500 group-hover:text-amber-500 dark:group-hover:text-amber-400 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
+                                                                <path d="M10 4H4a2 2 0 00-2 2v12a2 2 0 002 2h16a2 2 0 002-2V8a2 2 0 00-2-2h-8l-2-2z" />
+                                                            </svg>
+                                                            <span class="text-sm text-neutral-700 dark:text-neutral-300 truncate">{{ $item['name'] }}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td class="px-3 py-2.5 text-xs text-neutral-400 dark:text-neutral-500 text-right whitespace-nowrap">&mdash;</td>
+                                                    <td class="px-3 py-2.5 text-xs text-neutral-400 dark:text-neutral-500 text-right whitespace-nowrap">{{ \Carbon\Carbon::createFromTimestamp($item['created_at'])->format('d M y H:i') }}</td>
+                                                    <td class="px-3 py-2.5 text-xs text-neutral-400 dark:text-neutral-500 text-right whitespace-nowrap">{{ \Carbon\Carbon::createFromTimestamp($item['modified_at'])->format('d M y H:i') }}</td>
+                                                </tr>
+                                            @else
+                                                <tr class="hover:bg-neutral-100 dark:hover:bg-neutral-800 cursor-pointer group transition-colors"
+                                                    @if (str_ends_with(strtolower($item['name']), '.md'))
+                                                        wire:click="readFile('{{ $item['path'] }}')"
+                                                    @endif
+                                                    @contextmenu.prevent="contextMenu = { show: true, x: $event.clientX, y: $event.clientY, filePath: '{{ $item['path'] }}', isDir: false, isPinned: false }">
+                                                    <td class="px-3 py-2.5">
+                                                        <div class="flex items-center">
+                                                            <svg class="w-5 h-5 text-blue-400 dark:text-blue-500 group-hover:text-blue-500 dark:group-hover:text-blue-400 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
+                                                                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z" />
+                                                                <path d="M14 2v6h6" fill="none" stroke="currentColor" stroke-width="1" />
+                                                            </svg>
+                                                            <span class="text-sm text-neutral-700 dark:text-neutral-300 truncate">{{ $item['name'] }}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td class="px-3 py-2.5 text-xs text-neutral-400 dark:text-neutral-500 text-right whitespace-nowrap">{{ number_format($item['size'] / 1024, 1) }} KB</td>
+                                                    <td class="px-3 py-2.5 text-xs text-neutral-400 dark:text-neutral-500 text-right whitespace-nowrap">{{ \Carbon\Carbon::createFromTimestamp($item['created_at'])->format('d M y H:i') }}</td>
+                                                    <td class="px-3 py-2.5 text-xs text-neutral-400 dark:text-neutral-500 text-right whitespace-nowrap">{{ \Carbon\Carbon::createFromTimestamp($item['modified_at'])->format('d M y H:i') }}</td>
+                                                </tr>
+                                            @endif
+                                        @endforeach
+                                    </tbody>
+                                </table>
                             @endif
 
                             {{-- Context Menu --}}
                             <div x-show="contextMenu.show"
                                  x-transition
                                  :style="'position: fixed; left: ' + contextMenu.x + 'px; top: ' + contextMenu.y + 'px;'"
-                                 class="z-50 bg-white dark:bg-neutral-800 rounded-md shadow-lg dark:shadow-neutral-900/50 border border-neutral-200 dark:border-neutral-700 py-1 min-w-[160px]"
+                                 class="z-50 bg-white dark:bg-neutral-800 rounded-md shadow-lg dark:shadow-neutral-900/50 border border-neutral-200 dark:border-neutral-700 py-1 min-w-[180px]"
                                  @click.away="contextMenu.show = false">
-                                <button x-show="contextMenu.filePath.toLowerCase().endsWith('.md')"
-                                        @click="$wire.readFile(contextMenu.filePath); contextMenu.show = false"
-                                        class="w-full text-left px-4 py-2 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-700 dark:hover:text-blue-300 flex items-center transition-colors">
+
+                                {{-- File-only options --}}
+                                <template x-if="!contextMenu.isDir">
+                                    <div>
+                                        <button x-show="contextMenu.filePath.toLowerCase().endsWith('.md')"
+                                                @click="$wire.readFile(contextMenu.filePath); contextMenu.show = false"
+                                                class="w-full text-left px-4 py-2 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-700 dark:hover:text-blue-300 flex items-center transition-colors">
+                                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                            </svg>
+                                            Read
+                                        </button>
+                                        <button @click="$wire.convertFile(contextMenu.filePath); contextMenu.show = false"
+                                                class="w-full text-left px-4 py-2 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-amber-50 dark:hover:bg-amber-900/20 hover:text-amber-700 dark:hover:text-amber-300 flex items-center transition-colors">
+                                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                            </svg>
+                                            <span x-text="contextMenu.filePath.toLowerCase().endsWith('.md') ? 'Convert to Word' : 'Convert to Markdown'"></span>
+                                        </button>
+                                    </div>
+                                </template>
+
+                                {{-- Folder-only options --}}
+                                <template x-if="contextMenu.isDir">
+                                    <div>
+                                        <button @click="$wire.setAsDefault(contextMenu.filePath); contextMenu.show = false"
+                                                class="w-full text-left px-4 py-2 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-amber-50 dark:hover:bg-amber-900/20 hover:text-amber-700 dark:hover:text-amber-300 flex items-center transition-colors">
+                                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                                            </svg>
+                                            Set as Default
+                                        </button>
+                                        <button x-show="!contextMenu.isPinned"
+                                                @click="$wire.pinFolder(contextMenu.filePath); contextMenu.show = false"
+                                                class="w-full text-left px-4 py-2 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-700 dark:hover:text-blue-300 flex items-center transition-colors">
+                                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                                            </svg>
+                                            Pin Folder
+                                        </button>
+                                        <button x-show="contextMenu.isPinned"
+                                                @click="$wire.unpinFolder(contextMenu.filePath); contextMenu.show = false"
+                                                class="w-full text-left px-4 py-2 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-700 dark:hover:text-red-300 flex items-center transition-colors">
+                                            <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 24 24">
+                                                <path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                                            </svg>
+                                            Unpin Folder
+                                        </button>
+                                    </div>
+                                </template>
+
+                                {{-- Shared option: Copy Path --}}
+                                <button @click="navigator.clipboard.writeText(contextMenu.filePath); contextMenu.show = false"
+                                        class="w-full text-left px-4 py-2 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 flex items-center transition-colors">
                                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
                                     </svg>
-                                    Read
-                                </button>
-                                <button @click="$wire.convertFile(contextMenu.filePath); contextMenu.show = false"
-                                        class="w-full text-left px-4 py-2 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-amber-50 dark:hover:bg-amber-900/20 hover:text-amber-700 dark:hover:text-amber-300 flex items-center transition-colors">
-                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                                    </svg>
-                                    <span x-text="contextMenu.filePath.toLowerCase().endsWith('.md') ? 'Convert to Word' : 'Convert to Markdown'"></span>
+                                    Copy Path
                                 </button>
                             </div>
                         </div>
@@ -229,11 +351,27 @@
                     <h3 class="text-lg font-semibold text-neutral-800 dark:text-neutral-100 truncate pr-4">
                         {{ $previewFileName }}
                     </h3>
-                    <button wire:click="closePreview" class="text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors flex-shrink-0">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                    </button>
+                    <div class="flex items-center gap-2 flex-shrink-0">
+                        {{-- Refresh button --}}
+                        <button wire:click="refreshPreview" class="inline-flex items-center px-3 py-1.5 border border-neutral-400 dark:border-neutral-500 text-sm font-medium rounded-md text-neutral-700 dark:text-neutral-200 hover:bg-neutral-200 dark:hover:bg-neutral-500 transition-colors" title="Refresh">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                            </svg>
+                        </button>
+                        {{-- Convert to Word button --}}
+                        <button wire:click="convertPreviewFile" class="inline-flex items-center px-3 py-1.5 border border-amber-300 dark:border-amber-700 text-sm font-medium rounded-md text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/20 hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-colors" title="Convert to Word">
+                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                            </svg>
+                            Convert to Word
+                        </button>
+                        {{-- Close button --}}
+                        <button wire:click="closePreview" class="text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
                 </div>
                 <div class="px-6 py-4 overflow-y-auto max-h-[70vh]">
                     <div class="prose dark:prose-invert max-w-none">
