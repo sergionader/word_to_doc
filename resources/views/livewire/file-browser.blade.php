@@ -710,6 +710,17 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                             </svg>
                         </button>
+                        {{-- Transparency slider --}}
+                        <div class="flex items-center gap-2 mr-2" title="Window transparency - overlay on video calls">
+                            <svg class="w-4 h-4 text-neutral-500 dark:text-neutral-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                            <input type="range" min="10" max="100" step="5"
+                                   x-model.debounce.150ms="opacity"
+                                   class="w-20 h-1.5 bg-neutral-300 dark:bg-neutral-600 rounded-lg appearance-none cursor-pointer accent-amber-500">
+                            <span class="text-xs text-neutral-500 dark:text-neutral-400 w-8 tabular-nums" x-text="opacity + '%'"></span>
+                        </div>
                         {{-- Always on top toggle --}}
                         <button @click="pinned = !pinned; $wire.setAlwaysOnTop(pinned)"
                                 :class="pinned ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-700' : 'text-neutral-700 dark:text-neutral-200 border-neutral-400 dark:border-neutral-500 hover:bg-neutral-200 dark:hover:bg-neutral-500'"
