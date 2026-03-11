@@ -6,6 +6,7 @@ use App\Models\Conversion;
 use App\Services\ConversionService;
 use App\Services\FileSystemService;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 use Livewire\Component;
 
@@ -23,6 +24,13 @@ class FileBrowser extends Component
     public ?string $markdownHtml = null;
     public ?string $previewFileName = null;
     public ?string $previewFilePath = null;
+
+    // Split screen state
+    public bool $splitScreenEnabled = false;
+    public string $rightPanelPath = '';
+    public array $rightPanelItems = [];
+    public string $rightSortBy = 'name';
+    public string $rightSortDirection = 'asc';
 
     protected FileSystemService $fileSystemService;
 
@@ -45,6 +53,18 @@ class FileBrowser extends Component
         }
 
         $this->loadDirectory();
+
+        // Restore split screen state
+        $this->splitScreenEnabled = (bool) $user->split_screen_enabled;
+        if ($this->splitScreenEnabled) {
+            $splitPath = $user->split_screen_path;
+            if ($splitPath && $this->fileSystemService->isValidPath($splitPath) && is_dir($splitPath)) {
+                $this->rightPanelPath = $splitPath;
+            } else {
+                $this->rightPanelPath = $this->currentPath;
+            }
+            $this->loadRightPanel();
+        }
     }
 
     public function navigateTo(string $path): void
@@ -303,6 +323,56 @@ class FileBrowser extends Component
         $this->markdownHtml = null;
         $this->previewFileName = null;
         $this->previewFilePath = null;
+
+        // Reset window opacity and always-on-top when closing preview
+        if (config('nativephp-internal.running')) {
+            $this->callNativeWindowApi('window/opacity', ['id' => 'main', 'opacity' => 1.0]);
+            $this->callNativeWindowApi('window/always-on-top', ['id' => 'main', 'alwaysOnTop' => false]);
+        }
+    }
+
+    public function setWindowOpacity(float $opacity): void
+    {
+        if (!config('nativephp-internal.running')) {
+            return;
+        }
+
+        $opacity = max(0.1, min(1.0, $opacity));
+        $this->callNativeWindowApi('window/opacity', ['id' => 'main', 'opacity' => $opacity]);
+    }
+
+    public function setAlwaysOnTop(bool $value): void
+    {
+        if (!config('nativephp-internal.running')) {
+            return;
+        }
+
+        $this->callNativeWindowApi('window/always-on-top', ['id' => 'main', 'alwaysOnTop' => $value]);
+    }
+
+    protected function callNativeWindowApi(string $endpoint, array $data): void
+    {
+        try {
+            $response = Http::asJson()
+                ->baseUrl(config('nativephp-internal.api_url', ''))
+                ->withHeaders(['X-NativePHP-Secret' => config('nativephp-internal.secret')])
+                ->post($endpoint, $data);
+
+            \Log::debug("NativePHP API call", [
+                'endpoint' => $endpoint,
+                'data' => $data,
+                'status' => $response->status(),
+                'api_url' => config('nativephp-internal.api_url'),
+                'running' => config('nativephp-internal.running'),
+            ]);
+        } catch (\Exception $e) {
+            \Log::error("NativePHP API call failed", [
+                'endpoint' => $endpoint,
+                'error' => $e->getMessage(),
+                'api_url' => config('nativephp-internal.api_url'),
+                'running' => config('nativephp-internal.running'),
+            ]);
+        }
     }
 
     public function getBreadcrumbs(): array
@@ -310,6 +380,105 @@ class FileBrowser extends Component
         $root = config('filesystems.browse_root', '/');
         $rootPrefix = rtrim($root, '/');
         $relativePath = substr($this->currentPath, strlen($rootPrefix));
+        $parts = array_filter(explode('/', $relativePath));
+
+        $breadcrumbs = [['name' => 'Root', 'path' => $root]];
+        $currentBuildPath = $root;
+
+        foreach ($parts as $part) {
+            $currentBuildPath = rtrim($currentBuildPath, '/') . '/' . $part;
+            $breadcrumbs[] = ['name' => $part, 'path' => $currentBuildPath];
+        }
+
+        return $breadcrumbs;
+    }
+
+    public function toggleSplitScreen(): void
+    {
+        $this->splitScreenEnabled = !$this->splitScreenEnabled;
+        $user = Auth::user();
+
+        if ($this->splitScreenEnabled) {
+            $this->rightPanelPath = $this->currentPath;
+            $this->loadRightPanel();
+            $user->update([
+                'split_screen_enabled' => true,
+                'split_screen_path' => $this->rightPanelPath,
+            ]);
+        } else {
+            $this->rightPanelPath = '';
+            $this->rightPanelItems = [];
+            $user->update([
+                'split_screen_enabled' => false,
+                'split_screen_path' => null,
+            ]);
+        }
+    }
+
+    public function rightNavigateTo(string $path): void
+    {
+        if (!$this->fileSystemService->isValidPath($path)) {
+            return;
+        }
+
+        $this->rightPanelPath = $path;
+        $this->loadRightPanel();
+
+        Auth::user()->update(['split_screen_path' => $path]);
+    }
+
+    public function rightNavigateUp(): void
+    {
+        $parent = $this->fileSystemService->getParentDirectory($this->rightPanelPath);
+        $this->rightNavigateTo($parent);
+    }
+
+    public function rightSortItems(string $field): void
+    {
+        if ($this->rightSortBy === $field) {
+            $this->rightSortDirection = $this->rightSortDirection === 'asc' ? 'desc' : 'asc';
+        } else {
+            $this->rightSortBy = $field;
+            $this->rightSortDirection = 'asc';
+        }
+
+        $this->applyRightSorting();
+    }
+
+    protected function applyRightSorting(): void
+    {
+        usort($this->rightPanelItems, function ($a, $b) {
+            if ($a['type'] !== $b['type']) {
+                return $a['type'] === 'directory' ? -1 : 1;
+            }
+
+            $field = $this->rightSortBy;
+            $direction = $this->rightSortDirection === 'asc' ? 1 : -1;
+
+            if ($field === 'name') {
+                return $direction * strcasecmp($a['name'], $b['name']);
+            }
+
+            return $direction * (($a[$field] ?? 0) <=> ($b[$field] ?? 0));
+        });
+    }
+
+    protected function loadRightPanel(): void
+    {
+        $this->rightPanelItems = $this->fileSystemService->listDirectory($this->rightPanelPath);
+        $this->applyRightSorting();
+    }
+
+    public function refreshRightPanel(): void
+    {
+        $this->loadRightPanel();
+    }
+
+    public function getRightBreadcrumbs(): array
+    {
+        $root = config('filesystems.browse_root', '/');
+        $rootPrefix = rtrim($root, '/');
+        $relativePath = substr($this->rightPanelPath, strlen($rootPrefix));
         $parts = array_filter(explode('/', $relativePath));
 
         $breadcrumbs = [['name' => 'Root', 'path' => $root]];
@@ -335,6 +504,7 @@ class FileBrowser extends Component
             'breadcrumbs' => $this->getBreadcrumbs(),
             'quickNavItems' => $this->getQuickNavItems(),
             'pinnedFolders' => $this->getPinnedFolders(),
+            'rightBreadcrumbs' => $this->splitScreenEnabled ? $this->getRightBreadcrumbs() : [],
         ])->layout('layouts.app');
     }
 }

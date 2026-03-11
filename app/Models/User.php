@@ -21,6 +21,8 @@ class User extends Authenticatable implements FilamentUser
         'last_used_folder',
         'default_folder',
         'pinned_folders',
+        'split_screen_enabled',
+        'split_screen_path',
         'is_admin',
     ];
 
@@ -36,6 +38,7 @@ class User extends Authenticatable implements FilamentUser
             'password' => 'hashed',
             'is_admin' => 'boolean',
             'pinned_folders' => 'array',
+            'split_screen_enabled' => 'boolean',
         ];
     }
 
