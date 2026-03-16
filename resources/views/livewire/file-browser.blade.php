@@ -597,6 +597,7 @@
         <div class="fixed inset-0 overflow-y-auto px-4 py-6 sm:px-0 z-50"
              x-data="{
                  opacity: 100,
+                 fontSize: 100,
                  pinned: false,
                  searchOpen: false,
                  searchQuery: '',
@@ -710,6 +711,20 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                             </svg>
                         </button>
+                        {{-- Font size controls --}}
+                        <div class="flex items-center gap-0.5" title="Adjust font size">
+                            <button @click="fontSize = Math.max(50, fontSize - 10); $refs.proseContent.style.fontSize = fontSize + '%'"
+                                    class="inline-flex items-center justify-center w-7 h-7 border border-neutral-400 dark:border-neutral-500 text-sm font-medium rounded-md text-neutral-700 dark:text-neutral-200 hover:bg-neutral-200 dark:hover:bg-neutral-500 transition-colors"
+                                    title="Decrease font size">
+                                <span class="text-xs font-bold leading-none">A</span>
+                            </button>
+                            <span class="text-xs text-neutral-500 dark:text-neutral-400 w-8 text-center tabular-nums" x-text="fontSize + '%'"></span>
+                            <button @click="fontSize = Math.min(200, fontSize + 10); $refs.proseContent.style.fontSize = fontSize + '%'"
+                                    class="inline-flex items-center justify-center w-7 h-7 border border-neutral-400 dark:border-neutral-500 text-sm font-medium rounded-md text-neutral-700 dark:text-neutral-200 hover:bg-neutral-200 dark:hover:bg-neutral-500 transition-colors"
+                                    title="Increase font size">
+                                <span class="text-base font-bold leading-none">A</span>
+                            </button>
+                        </div>
                         {{-- Transparency slider --}}
                         <div class="flex items-center gap-2 mr-2" title="Window transparency - overlay on video calls">
                             <svg class="w-4 h-4 text-neutral-500 dark:text-neutral-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -781,7 +796,7 @@
                     </button>
                 </div>
                 <div x-ref="modalBody" class="px-6 py-4 overflow-y-auto max-h-[70vh] bg-white dark:bg-neutral-800">
-                    <div class="prose dark:prose-invert max-w-none">
+                    <div x-ref="proseContent" class="prose dark:prose-invert max-w-none">
                         {!! $markdownHtml !!}
                     </div>
                 </div>
