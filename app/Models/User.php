@@ -24,6 +24,11 @@ class User extends Authenticatable implements FilamentUser
         'split_screen_enabled',
         'split_screen_path',
         'is_admin',
+        'view_mode',
+        'sort_by',
+        'sort_direction',
+        'right_sort_by',
+        'right_sort_direction',
     ];
 
     protected $hidden = [

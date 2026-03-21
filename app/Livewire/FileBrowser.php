@@ -52,6 +52,13 @@ class FileBrowser extends Component
             $this->currentPath = config('filesystems.browse_root', '/');
         }
 
+        // Restore view mode and sort order
+        $this->viewMode = $user->view_mode ?? 'list';
+        $this->sortBy = $user->sort_by ?? 'name';
+        $this->sortDirection = $user->sort_direction ?? 'asc';
+        $this->rightSortBy = $user->right_sort_by ?? 'name';
+        $this->rightSortDirection = $user->right_sort_direction ?? 'asc';
+
         $this->loadDirectory();
 
         // Restore split screen state
@@ -94,6 +101,7 @@ class FileBrowser extends Component
     public function toggleViewMode(): void
     {
         $this->viewMode = $this->viewMode === 'grid' ? 'list' : 'grid';
+        Auth::user()->update(['view_mode' => $this->viewMode]);
     }
 
     public function sortItems(string $field): void
@@ -106,6 +114,10 @@ class FileBrowser extends Component
         }
 
         $this->applySorting();
+        Auth::user()->update([
+            'sort_by' => $this->sortBy,
+            'sort_direction' => $this->sortDirection,
+        ]);
     }
 
     protected function applySorting(): void
@@ -443,6 +455,10 @@ class FileBrowser extends Component
         }
 
         $this->applyRightSorting();
+        Auth::user()->update([
+            'right_sort_by' => $this->rightSortBy,
+            'right_sort_direction' => $this->rightSortDirection,
+        ]);
     }
 
     protected function applyRightSorting(): void
